@@ -252,3 +252,9 @@ status, capacity (htc_battery percent from the factory 1250 mAh curve, meaningle
 the user's custom larger cell). chacha-config shows voltage in the main menu and a
 "b) battery" screen refreshing every 5 s. Sign/direction of batt_current not verified.
 Also deployed the ^S fixes (chacha-idle O_NONBLOCK, profile.d/chacha-console.sh).
+
+## Cataclysm 0.A replaces 0.8
+build-cdda.sh takes the version (default 0.A); sources in work/cdda/src-VERSION. 0.A
+builds with the same flags as 0.8 except src/game.cpp defines its own std::abs(float),
+which clashes with libstdc++ 15; the script deletes that line. On the phone /opt/cataclysm
+is now 0.A (menu shows "Version: 0.A"); the 0.8 save dirs moved to /root/cataclysm-0.8-saves.
