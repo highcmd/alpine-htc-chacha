@@ -12,7 +12,7 @@ SCR_W=480	# ChaCha panel, pixels
 SCR_H=320
 LETTERS="a b c d e f g h i j k l m n o p q r s t u v w x y z"
 
-[ "$(id -u)" = 0 ] || { echo "uruchom jako root"; exit 1; }
+[ "$(id -u)" = 0 ] || { echo "run as root"; exit 1; }
 
 say() { printf '%s\n' "$*"; }
 pause() { printf '\n[Enter] '; read -r _; }
@@ -21,8 +21,8 @@ ask() {	# ask "prompt" -> $REPLY
 	IFS= read -r REPLY || exit 0
 }
 confirm() {	# confirm "question" -> default no
-	ask "$1 [t/N] "
-	case $REPLY in t|T|y|Y) return 0 ;; esac
+	ask "$1 [y/N] "
+	case $REPLY in y|Y) return 0 ;; esac
 	return 1
 }
 header() {
@@ -45,7 +45,7 @@ index_of() {
 
 wpa_ok() {
 	$WPA ping 2>/dev/null | grep -q PONG && return 0
-	say "wpa_supplicant nie dziala:"
+	say "wpa_supplicant is not running:"
 	say "  rc-service wpa_supplicant-chacha restart"
 	pause
 	return 1
@@ -60,7 +60,7 @@ wifi_summary() {
 	if [ "$st" = COMPLETED ]; then
 		echo "$(wifi_state ssid) ${WIFI_IP:-$(wifi_ip)}"
 	else
-		echo "${st:-brak} (niepolaczony)"
+		echo "${st:-none} (not connected)"
 	fi
 }
 
@@ -86,9 +86,9 @@ bars() {
 }
 
 wifi_scan() {
-	header "skanowanie"
+	header "scan"
 	wpa_ok || return
-	say "Skanuje..."
+	say "Scanning..."
 	n=0
 	for try in 1 2 3; do
 		$WPA scan >/dev/null 2>&1
@@ -103,7 +103,7 @@ wifi_scan() {
 
 	saved=$($WPA list_networks 2>/dev/null | tail -n +2 | cut -f2)
 	cur=$(wifi_state ssid)
-	header "sieci ($n)"
+	header "networks ($n)"
 	i=1
 	while IFS="$(printf '\t')" read -r bssid freq sig flags ssid; do
 		ch=$(( (freq - 2407) / 5 ))
@@ -114,11 +114,11 @@ wifi_scan() {
 			"$(bars "$sig")" "$(sec_of "$flags")" "$ch"
 		i=$((i + 1))
 	done < /tmp/chacha-scan
-	[ "$n" -eq 0 ] && say "Nic nie znaleziono."
+	[ "$n" -eq 0 ] && say "Nothing found."
 	say ""
-	say "* polaczona  + zapisana"
-	say "1) ukryta siec (wpisz SSID)"
-	ask "Wybierz [Enter=wstecz]: "
+	say "* connected  + saved"
+	say "1) hidden network (enter SSID)"
+	ask "Choose [Enter=back]: "
 	case $REPLY in
 	"") return ;;
 	1)
@@ -138,11 +138,11 @@ wifi_scan() {
 # wifi_connect SSID SECURITY scanned|hidden
 wifi_connect() {
 	ssid=$1 sec=$2 how=$3
-	header "polacz: $ssid"
+	header "connect: $ssid"
 	case $sec in
 	EAP|WPA3|WEP)
-		say "Siec $sec nie jest obslugiwana"
-		say "(tylko WPA/WPA2-PSK i otwarte)."
+		say "$sec networks are not supported"
+		say "(only WPA/WPA2-PSK and open)."
 		pause
 		return ;;
 	esac
@@ -150,7 +150,7 @@ wifi_connect() {
 	psk=""
 	if [ "$sec" != open ]; then
 		while :; do
-			printf 'Haslo: '
+			printf 'Password: '
 			stty -echo 2>/dev/null
 			IFS= read -r psk
 			stty echo 2>/dev/null
@@ -158,11 +158,11 @@ wifi_connect() {
 			[ -n "$psk" ] || return
 			len=${#psk}
 			[ "$len" -ge 8 ] && [ "$len" -le 63 ] && break
-			say "Haslo WPA ma 8-63 znakow (jest $len)."
+			say "A WPA password has 8-63 characters (got $len)."
 		done
-		if confirm "Pokazac haslo?"; then
+		if confirm "Show password?"; then
 			say "  $psk"
-			confirm "Poprawne?" || return
+			confirm "Correct?" || return
 		fi
 	fi
 
@@ -185,11 +185,11 @@ wifi_connect() {
 		$WPA set_network "$id" key_mgmt NONE >/dev/null
 	else
 		$WPA set_network "$id" psk "\"$psk\"" | grep -q OK ||
-			{ say "Nie mozna ustawic hasla."; $WPA remove_network "$id" >/dev/null; pause; return; }
+			{ say "Could not set the password."; $WPA remove_network "$id" >/dev/null; pause; return; }
 	fi
 	$WPA select_network "$id" >/dev/null
 
-	printf 'Lacze'
+	printf 'Connecting'
 	ok=""
 	for t in $(seq 1 30); do
 		sleep 1
@@ -200,9 +200,9 @@ wifi_connect() {
 	$WPA enable_network all >/dev/null
 
 	if [ -z "$ok" ]; then
-		say "Nie polaczono ($(wifi_state wpa_state))."
-		[ "$sec" != open ] && say "Zle haslo albo slaby sygnal."
-		if confirm "Zachowac te siec mimo to?"; then
+		say "Not connected ($(wifi_state wpa_state))."
+		[ "$sec" != open ] && say "Wrong password or weak signal."
+		if confirm "Keep this network anyway?"; then
 			$WPA save_config >/dev/null
 		else
 			$WPA remove_network "$id" >/dev/null
@@ -212,7 +212,7 @@ wifi_connect() {
 		return
 	fi
 	$WPA save_config >/dev/null
-	say "Polaczono. Zapisano w"
+	say "Connected. Saved to"
 	say "  /etc/wpa_supplicant/wpa_supplicant.conf"
 
 	# udhcpc runs in the background from ifup (-b); ask it to renew now
@@ -232,35 +232,35 @@ wifi_connect() {
 	done
 	echo
 	if [ -n "$WIFI_IP" ]; then
-		say "Adres IP: $WIFI_IP"
+		say "IP address: $WIFI_IP"
 	else
-		say "Brak adresu z DHCP (jeszcze?)."
+		say "No DHCP address (yet?)."
 	fi
 	pause
 }
 
 wifi_saved() {
 	while :; do
-		header "zapisane sieci"
+		header "saved networks"
 		wpa_ok || return
 		$WPA list_networks | tail -n +2 > /tmp/chacha-nets
 		n=$(wc -l < /tmp/chacha-nets)
 		i=1
 		while IFS="$(printf '\t')" read -r id ssid bssid flags; do
 			st=""
-			case $flags in *CURRENT*) st=" (polaczona)" ;; *DISABLED*) st=" (wylaczona)" ;; esac
+			case $flags in *CURRENT*) st=" (connected)" ;; *DISABLED*) st=" (disabled)" ;; esac
 			printf '%s) %s%s\n' "$(letter_at $i)" "$ssid" "$st"
 			i=$((i + 1))
 		done < /tmp/chacha-nets
-		[ "$n" -eq 0 ] && say "Brak zapisanych sieci."
+		[ "$n" -eq 0 ] && say "No saved networks."
 		say ""
-		ask "Usunac ktora? [Enter=wstecz]: "
+		ask "Remove which? [Enter=back]: "
 		[ -n "$REPLY" ] || return
 		k=$(index_of "$REPLY")
 		[ -n "$k" ] && [ "$k" -le "$n" ] || continue
 		id=$(sed -n "${k}p" /tmp/chacha-nets | cut -f1)
 		ssid=$(sed -n "${k}p" /tmp/chacha-nets | cut -f2)
-		if confirm "Usunac \"$ssid\"?"; then
+		if confirm "Remove \"$ssid\"?"; then
 			$WPA remove_network "$id" >/dev/null
 			$WPA save_config >/dev/null
 		fi
@@ -268,7 +268,7 @@ wifi_saved() {
 }
 
 wifi_status() {
-	header "status WiFi"
+	header "WiFi status"
 	wpa_ok || return
 	$WPA status | grep -E '^(wpa_state|ssid|bssid|freq|ip_address|key_mgmt)='
 	sig=$(iwconfig $IFACE 2>/dev/null | sed -n 's/.*Signal level[=:]\([-0-9]*\).*/\1/p')
@@ -305,19 +305,19 @@ font_apply() { setfont -C "$CONSOLE" "$FONTDIR/$1" 2>&1; }
 font_try() {	# font_try NAME: preview, confirm (auto-revert), save
 	old=$(font_current)
 	err=$(font_apply "$1") || { say "setfont: $err"; pause; return; }
-	header "czcionka"
+	header "font"
 	say "$1 ($(font_label "$FONTDIR/$1"))"
 	say ""
-	say "Podglad: abcdefghijklmnopqrstuvwxyz"
+	say "Preview: abcdefghijklmnopqrstuvwxyz"
 	say "         ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 	say "         0123456789 []{}<>|\\~^\`"
 	say ""
-	say "Bez odpowiedzi w 20 s wraca"
-	say "poprzednia czcionka."
-	printf 'Zostawic? [t/N] '
-	if read -r -t 20 REPLY && case $REPLY in t|T|y|Y) true ;; *) false ;; esac; then
+	say "Without an answer within 20 s"
+	say "the previous font comes back."
+	printf 'Keep it? [y/N] '
+	if read -r -t 20 REPLY && case $REPLY in y|Y) true ;; *) false ;; esac; then
 		sed -i "s|^consolefont=.*|consolefont=\"$1\"|" "$FONTCONF"
-		say "Zapisano w $FONTCONF"
+		say "Saved to $FONTCONF"
 		pause
 	else
 		echo
@@ -325,20 +325,20 @@ font_try() {	# font_try NAME: preview, confirm (auto-revert), save
 	fi
 }
 
-# Terminus families: code page 2 = ISO 8859-2 (Polish letters).
+# Terminus families: code page 2 = ISO 8859-2 (Central European, Polish letters).
 # The u/v variants have 512 glyphs, which halves the console colours to 8.
 font_menu() {
 	while :; do
 		cur=$(font_current)
-		header "czcionka terminala"
-		say "Teraz: $cur"
-		say "       ($(font_label "$FONTDIR/$cur"))"
+		header "console font"
+		say "Now: $cur"
+		say "     ($(font_label "$FONTDIR/$cur"))"
 		say ""
 		say "a) Terminus"
-		say "b) Terminus pogrubiony"
-		say "c) inne (VGA, DR-DOS...)"
+		say "b) Terminus bold"
+		say "c) other (VGA, DR-DOS...)"
 		say ""
-		ask "Wybierz [Enter=wstecz]: "
+		ask "Choose [Enter=back]: "
 		case $REPLY in
 		a) font_sizes "ter-2??n.psf.gz" ;;
 		b) font_sizes "ter-2??b.psf.gz" ;;
@@ -349,7 +349,7 @@ font_menu() {
 }
 
 font_sizes() {	# font_sizes "GLOB..."
-	header "rozmiar"
+	header "size"
 	: > /tmp/chacha-fonts
 	for f in $(cd "$FONTDIR" && ls $1 2>/dev/null); do
 		set -- $(font_dims "$FONTDIR/$f")
@@ -357,7 +357,7 @@ font_sizes() {	# font_sizes "GLOB..."
 	done
 	sort -n /tmp/chacha-fonts | cut -d' ' -f2 > /tmp/chacha-fonts.s
 	n=$(wc -l < /tmp/chacha-fonts.s)
-	say "   znak   ekran   plik"
+	say "   glyph  screen  file"
 	i=1
 	while read -r f; do
 		set -- $(font_label "$FONTDIR/$f")
@@ -365,7 +365,7 @@ font_sizes() {	# font_sizes "GLOB..."
 		i=$((i + 1))
 	done < /tmp/chacha-fonts.s
 	say ""
-	ask "Wybierz [Enter=wstecz]: "
+	ask "Choose [Enter=back]: "
 	k=$(index_of "$REPLY")
 	[ -n "$k" ] && [ "$k" -le "$n" ] || return
 	font_try "$(sed -n "${k}p" /tmp/chacha-fonts.s)"
@@ -384,14 +384,14 @@ bl_set() { sed -i "s/^$1=.*/$1=\"$2\"/" "${3:-$BLCONF}"; }
 
 idle_label() {
 	case $1 in
-	0) echo "nigdy" ;;
+	0) echo "never" ;;
 	*) echo "$(($1 / 60)) min" ;;
 	esac
 }
 
 bl_buttons_label() {
 	case $1 in
-	0) echo "wylaczone" ;;
+	0) echo "off" ;;
 	*) echo "$1/255" ;;
 	esac
 }
@@ -402,22 +402,22 @@ backlight_menu() {
 		kbd=$(bl_get KEYBOARD)
 		btn=$(bl_get BUTTONS)
 		idle=$(bl_get IDLE_TIMEOUT "$IDLECONF")
-		header "podswietlenie"
-		say "Klawiatura: ${kbd:-on}"
-		say "Przyciski:  $(bl_buttons_label "${btn:-0}")"
-		say "Wygaszanie: $(idle_label "${idle:-300}")"
+		header "backlight"
+		say "Keyboard:   ${kbd:-on}"
+		say "Touch keys: $(bl_buttons_label "${btn:-0}")"
+		say "Idle off:   $(idle_label "${idle:-300}")"
 		say ""
-		say "k) klawiatura wl/wyl"
-		say "a) przyciski: wylaczone"
-		say "b) przyciski: slabe"
-		say "c) przyciski: srednie"
-		say "d) przyciski: pelne"
-		say "t) wygaszanie po bezczynnosci"
+		say "k) keyboard on/off"
+		say "a) touch keys: off"
+		say "b) touch keys: low"
+		say "c) touch keys: medium"
+		say "d) touch keys: full"
+		say "t) switch off when idle"
 		say ""
-		say "Zapisywane od razu, dziala"
-		say "tez po restarcie."
+		say "Saved at once, kept after"
+		say "a reboot."
 		say ""
-		ask "Wybierz [Enter=wstecz]: "
+		ask "Choose [Enter=back]: "
 		case $REPLY in
 		k)
 			if [ "${kbd:-on}" = on ]; then kbd=off; v=0; else kbd=on; v=255; fi
@@ -435,15 +435,17 @@ backlight_menu() {
 
 # chacha-idle switches all backlights off; any key or touch wakes the screen
 idle_menu() {
-	header "wygaszanie"
-	say "Wszystkie podswietlenia gasna"
-	say "po czasie bez klawisza/dotyku."
-	say "Klawisz budzacy nie jest wpisywany."
+	header "idle"
+	say "All backlights go off after"
+	say "this long without a key/touch."
+	say "The waking key is not typed."
+	say "Power key: press = screen off/on,"
+	say "hold 3 s = power off."
 	say ""
 	say "a) 1 min   b) 2 min   c) 5 min"
-	say "d) 10 min  e) 30 min  f) nigdy"
+	say "d) 10 min  e) 30 min  f) never"
 	say ""
-	ask "Wybierz [Enter=wstecz]: "
+	ask "Choose [Enter=back]: "
 	case $REPLY in
 	a) v=60 ;; b) v=120 ;; c) v=300 ;; d) v=600 ;; e) v=1800 ;; f) v=0 ;;
 	*) return ;;
@@ -462,13 +464,13 @@ while :; do
 	say "WiFi: $(wifi_summary)"
 	say "Font: $(font_current | sed "s/\.psf.*//")"
 	say ""
-	say "w) WiFi: skanuj i polacz"
-	say "z) WiFi: zapisane sieci"
+	say "w) WiFi: scan and connect"
+	say "z) WiFi: saved networks"
 	say "s) WiFi: status"
-	say "f) czcionka terminala"
-	say "p) podswietlenie"
+	say "f) console font"
+	say "p) backlight and idle"
 	say ""
-	ask "Wybierz [Enter=wyjscie]: "
+	ask "Choose [Enter=quit]: "
 	case $REPLY in
 	w) wifi_scan ;;
 	z) wifi_saved ;;

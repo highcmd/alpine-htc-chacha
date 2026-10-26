@@ -219,3 +219,22 @@ compass report continuously); after the timeout saves and zeroes lcd/keyboard/bu
 backlights and EVIOCGRABs the inputs so the waking key is not typed; SIGTERM restores.
 Console blanking disabled with ESC[9;0] in the service. Timed blank + SIGTERM restore
 tested over ssh; waking with a real key press needs a person at the phone.
+
+2026-10-26: DATA LOSS. The phone rebooted uncleanly (cause unknown: around 11:50 UTC, while
+idle) and every file written since boot came back empty: init scripts, chacha-idle,
+/opt/cataclysm data, the user's first CDDA save. Root cause: the HTC kernel sets
+dirty_writeback_interval = 0 (mm/page-writeback.c) and only raises it to 500 in an
+Android early-suspend handler, which never runs here, so dirty pages stayed in RAM
+(4 MB test file still Dirty after 60 s). apk packages survived because apk syncs.
+Fix: /etc/sysctl.d/chacha.conf vm.dirty_writeback_centisecs=500 (sysctl runs in boot);
+verified Dirty drops to 0. Damaged files redeployed; empty save moved to save.broken.
+The "BUG: sleeping function called from invalid context" warnings (tty_open,
+page_alloc, ext4_remount) show up for many processes; pre-existing, not caused by
+chacha-idle.
+
+chacha-idle: power key (KEY_POWER on chacha-keypad, VoidSymbol in the console keymap):
+short press toggles dark, 3 s hold execs /sbin/poweroff after printing a notice on
+tty1. Tested by writing input_event structs to /dev/input/event4 (evdev injection is
+delivered to the grabbing client too); the long press was tested with a fake poweroff
+in a mount namespace only, not a real power-off.
+chacha-config UI translated to English (confirm is now y/N).
