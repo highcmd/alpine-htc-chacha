@@ -197,3 +197,6 @@ header; preview with setfont -C /dev/tty1, auto-revert after 20 s. Terminus offe
 code page 2 (Polish); u/v have 512 glyphs, which would cut the colours to 8.
 Tested: scan (ch 12 visible), preview/revert/save, failed connect cleans up.
 Not tested: a successful connect (2.4 GHz network unavailable).
+
+2026-10-26: busybox getty defaults to TERM=vt102 (no colours, so ssh sessions were monochrome);
+inittab now passes "linux" as the getty TERM argument.
