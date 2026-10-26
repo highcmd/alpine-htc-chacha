@@ -257,6 +257,10 @@ współrzędne dotyku (próg paska klawiszy: `-y 700`).
   podświetlenie ekranu, klawiatury i przycisków (domyślnie 5 min, `/etc/conf.d/chacha-idle`).
   Klawisz, który budzi ekran, nie trafia do konsoli. Wygaszanie wbudowane w konsolę jest
   wyłączone, bo przy msm_fb czyściło tylko obraz, a podświetlenie zostawiało włączone.
+- `r`: autopowtarzanie przytrzymanego klawisza. Klawiatura ChaChy sama go nie ma (brak EV_REP),
+  więc robi je `chacha-idle`: po opóźnieniu (250/400/600 ms albo wyłączone) wysyła powtórzenia
+  z wybraną szybkością (5/10/15/20 na sekundę). Shift, FN, SYM, Alt i power się nie powtarzają.
+  Zapis w `/etc/conf.d/chacha-idle` (`KEY_REPEAT_DELAY`, `KEY_REPEAT_PERIOD`), domyślnie 400 ms, 10/s.
 - `b`: bateria. Napięcie (`batt_vol`), status, ładowarka, prąd, temperatura; odświeża się
   co 5 s. Napięcie widać też w menu głównym. Procent z kernela liczony jest z krzywej
   fabrycznej baterii 1250 mAh, więc przy innym ogniwie miarodajne jest napięcie

@@ -7,7 +7,14 @@
  * Power key: a short press switches the screen off (or on), holding it for
  * LONG_PRESS seconds runs "poweroff".
  *
- * usage: chacha-idle [-t SECONDS]   (default 300; 0 = never)
+ * Key repeat: the keypad driver does not set EV_REP, so the kernel never
+ * repeats a held key. A held key is repeated here by writing EV_KEY value 2
+ * events back into the keypad's event device, which reach the console like
+ * kernel repeats.
+ *
+ * usage: chacha-idle [-t SECONDS] [-r DELAY_MS] [-p PERIOD_MS]
+ *        -t: idle timeout (default 300; 0 = never)
+ *        -r/-p: key repeat delay and period (default 400/100; -r 0 = off)
  *
  * While dark the keypad and touchscreen are grabbed, so the key or touch that
  * wakes the screen is not typed into the console.
@@ -25,12 +32,15 @@
 #include <linux/input.h>
 
 #define MAXDEV		4
+#define KEYPAD		"chacha-keypad"
 #define LEDS		"/sys/class/leds/"
 #define LONG_PRESS	3000	/* ms */
 #define CONSOLE		"/dev/tty1"
 
 /* the sensors (light, proximity, compass) report continuously, so only these wake */
-static const char *wake_names[] = { "chacha-keypad", "cy8c-touchscreen" };
+static const char *wake_names[] = { KEYPAD, "cy8c-touchscreen" };
+/* modifiers (Shift, FN, SYM, red call = Alt) and power do not repeat */
+static const int no_repeat[] = { 42, 56, 107, 183, KEY_POWER };
 static const char *leds[] = { "lcd-backlight", "keyboard-backlight", "button-backlight" };
 #define NLEDS	(sizeof(leds) / sizeof(leds[0]))
 
@@ -38,6 +48,10 @@ static struct pollfd pfd[MAXDEV];
 static int npfd, dark, saved[NLEDS];
 static long long power_down;	/* ms timestamp of the power key press, 0 = up */
 static int power_woke;		/* this press woke the screen: its release does nothing */
+static int keypad = -1;		/* pfd index of the keypad */
+static int rep_delay = 400, rep_period = 100;
+static int rep_code;		/* key being repeated, 0 = none */
+static long long rep_next;	/* ms timestamp of the next repeat */
 static volatile sig_atomic_t quit;
 
 static void on_signal(int sig)
@@ -97,12 +111,14 @@ static void open_inputs(void)
 		if (strncmp(de->d_name, "event", 5))
 			continue;
 		snprintf(path, sizeof(path), "/dev/input/%s", de->d_name);
-		fd = open(path, O_RDONLY | O_NONBLOCK);
+		fd = open(path, O_RDWR | O_NONBLOCK);
 		if (fd < 0)
 			continue;
 		if (ioctl(fd, EVIOCGNAME(sizeof(name)), name) >= 0)
 			for (i = 0; i < sizeof(wake_names) / sizeof(wake_names[0]); i++)
 				if (!strcmp(name, wake_names[i])) {
+					if (!strcmp(name, KEYPAD))
+						keypad = npfd;
 					pfd[npfd].fd = fd;
 					pfd[npfd++].events = POLLIN;
 					fd = -1;
@@ -122,6 +138,44 @@ static void grab(int on)
 		ioctl(pfd[i].fd, EVIOCGRAB, on);
 }
 
+static int repeats(int code)
+{
+	unsigned i;
+
+	for (i = 0; i < sizeof(no_repeat) / sizeof(no_repeat[0]); i++)
+		if (code == no_repeat[i])
+			return 0;
+	return 1;
+}
+
+/* like the kernel: the last key pressed repeats, any release stops it */
+static void track_repeat(int code, int value)
+{
+	if (value == 1 && rep_delay > 0 && repeats(code)) {
+		rep_code = code;
+		rep_next = now_ms() + rep_delay;
+	} else if (value == 0)
+		rep_code = 0;
+}
+
+static void send_repeat(long long t)
+{
+	struct input_event ev[2];
+
+	memset(ev, 0, sizeof(ev));
+	ev[0].type = EV_KEY;
+	ev[0].code = rep_code;
+	ev[0].value = 2;
+	ev[1].type = EV_SYN;
+	ev[1].code = SYN_REPORT;
+	if (write(pfd[keypad].fd, ev, sizeof(ev)) < 0)
+		perror("repeat");
+	/* do not catch up after a stall: a burst would overshoot in games */
+	rep_next += rep_period;
+	if (rep_next <= t)
+		rep_next = t + rep_period;
+}
+
 static void go_dark(void)
 {
 	unsigned l;
@@ -132,6 +186,7 @@ static void go_dark(void)
 	}
 	grab(1);
 	dark = 1;
+	rep_code = 0;
 }
 
 static void restore_lights(void)
@@ -164,8 +219,12 @@ static int read_events(int *power_press, int *power_short)
 							*power_short = 1;
 						power_down = 0;
 					}
-				} else if (ev[k].type != EV_SYN)
+				} else if (ev[k].type != EV_SYN) {
+					/* value 2: our own repeats coming back */
+					if (i == keypad && ev[k].type == EV_KEY && ev[k].value != 2)
+						track_repeat(ev[k].code, ev[k].value);
 					other = 1;
+				}
 			}
 	return other;
 }
@@ -181,6 +240,7 @@ static void wake(void)
 	grab(0);
 	restore_lights();
 	dark = 0;
+	rep_code = 0;	/* the waking key does not repeat */
 }
 
 static void power_off(void)
@@ -209,14 +269,19 @@ int main(int argc, char **argv)
 {
 	struct sigaction sa = { .sa_handler = on_signal };
 	long long last = now_ms(), t, wait;
-	int timeout = 300, r, power_press, power_short, other;
+	int timeout = 300, r, power_press, power_short, other, c;
 
-	if (argc == 3 && !strcmp(argv[1], "-t"))
-		timeout = atoi(argv[2]);
-	else if (argc != 1) {
-		fprintf(stderr, "usage: %s [-t SECONDS]\n", argv[0]);
-		return 2;
-	}
+	while ((c = getopt(argc, argv, "t:r:p:")) != -1)
+		switch (c) {
+		case 't': timeout = atoi(optarg); break;
+		case 'r': rep_delay = atoi(optarg); break;
+		case 'p': rep_period = atoi(optarg); break;
+		default:
+			fprintf(stderr, "usage: %s [-t SECONDS] [-r DELAY_MS] [-p PERIOD_MS]\n", argv[0]);
+			return 2;
+		}
+	if (rep_period < 10)
+		rep_period = 10;
 	open_inputs();
 	if (!npfd) {
 		fprintf(stderr, "no keypad/touchscreen input devices\n");
@@ -228,13 +293,15 @@ int main(int argc, char **argv)
 	sigaction(SIGINT, &sa, NULL);
 
 	while (!quit) {
-		/* sleep until the idle deadline or the long-press deadline */
+		/* sleep until the idle, long-press or key repeat deadline */
 		t = now_ms();
 		wait = 0x7fffffff;
 		if (!dark && timeout > 0 && last + timeout * 1000LL - t < wait)
 			wait = last + timeout * 1000LL - t;
 		if (power_down && power_down + LONG_PRESS - t < wait)
 			wait = power_down + LONG_PRESS - t;
+		if (rep_code && rep_next - t < wait)
+			wait = rep_next - t;
 		if (wait < 0)
 			wait = 0;
 
@@ -251,6 +318,8 @@ int main(int argc, char **argv)
 
 		if (power_down && t - power_down >= LONG_PRESS)
 			power_off();
+		if (!dark && rep_code && keypad >= 0 && t >= rep_next)
+			send_repeat(t);
 
 		if (dark) {
 			if (other || power_press)

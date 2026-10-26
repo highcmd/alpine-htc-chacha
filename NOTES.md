@@ -275,3 +275,16 @@ warns and waits for a key) -> wrapper /usr/local/bin/cataclysm now in the overla
 0.I build stopped at the user's request ("nie potrzebuje nowszych wersji") after ~330 of
 ~400 objects; musl-compat.h is now C++-only because 0.I compiles zstd's C with $(CXX) -x c.
 build-cdda.sh default is 0.D. work/cdda/src-0.I (1.2 GB) left in place.
+
+## Held-key repeat (chacha-idle)
+chacha-keypad capabilities/ev=3 (no EV_REP), so the kernel never autorepeats and kbdrate is
+useless. chacha-idle now opens the input devices O_RDWR and, while awake, writes EV_KEY value 2
+(+SYN) for the last pressed non-modifier key into the keypad's evdev; input_handle_event passes
+value 2 to handlers when the key is down, and the console kbd handler treats it as a repeat.
+Its own value-2 events come back on the same fd and are ignored for tracking; any release
+stops repeat (as in the kernel); no catch-up after stalls (bursts overshoot in games).
+Excluded: 42 Shift, 56 FN, 183 SYM, 107 red call (Alt), 116 power. Options -r DELAY -p PERIOD,
+conf.d KEY_REPEAT_DELAY/KEY_REPEAT_PERIOD (400/100), chacha-config "r) key repeat".
+Measured via an evdev reader: first repeat 402 ms after press, then 99-101 ms apart.
+MISTAKE: tested by injecting keys while the user was playing CDDA on tty1 (~20 moves west,
+opened "Use item"). Check /dev/vcs1 / ps for tty1 before injecting anything.

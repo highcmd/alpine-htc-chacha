@@ -1,2 +1,6 @@
 # Seconds without a key press or touch before the backlights go off (0 = never)
 IDLE_TIMEOUT="300"
+# Held-key repeat (the keypad has none of its own): delay before the first
+# repeat and time between repeats, in ms; KEY_REPEAT_DELAY="0" switches it off
+KEY_REPEAT_DELAY="400"
+KEY_REPEAT_PERIOD="100"

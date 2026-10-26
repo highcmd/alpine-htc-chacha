@@ -455,6 +455,51 @@ idle_menu() {
 	rc-service chacha-idle restart >/dev/null 2>&1
 }
 
+# ---------------------------------------------------------------- key repeat
+
+# The keypad has no repeat of its own; chacha-idle repeats a held key
+repeat_label() {	# repeat_label DELAY PERIOD
+	case $1 in
+	0) echo "off" ;;
+	*) echo "after $1 ms, $((1000 / $2))/s" ;;
+	esac
+}
+
+repeat_menu() {
+	while :; do
+		d=$(bl_get KEY_REPEAT_DELAY "$IDLECONF")
+		p=$(bl_get KEY_REPEAT_PERIOD "$IDLECONF")
+		header "key repeat"
+		say "Held key: $(repeat_label "${d:-400}" "${p:-100}")"
+		say "(not Shift, FN, SYM, Alt, power)"
+		say ""
+		say "Start after:"
+		say "a) 250 ms  b) 400 ms  c) 600 ms"
+		say "d) off"
+		say "Speed:"
+		say "e) 5/s   f) 10/s"
+		say "g) 15/s  h) 20/s"
+		say ""
+		ask "Choose [Enter=back]: "
+		case $REPLY in
+		a) var=KEY_REPEAT_DELAY v=250 ;;
+		b) var=KEY_REPEAT_DELAY v=400 ;;
+		c) var=KEY_REPEAT_DELAY v=600 ;;
+		d) var=KEY_REPEAT_DELAY v=0 ;;
+		e) var=KEY_REPEAT_PERIOD v=200 ;;
+		f) var=KEY_REPEAT_PERIOD v=100 ;;
+		g) var=KEY_REPEAT_PERIOD v=66 ;;
+		h) var=KEY_REPEAT_PERIOD v=50 ;;
+		"") return ;;
+		*) continue ;;
+		esac
+		# configs from before key repeat lack the lines
+		grep -q "^$var=" "$IDLECONF" || echo "$var=\"\"" >> "$IDLECONF"
+		bl_set $var $v "$IDLECONF"
+		rc-service chacha-idle restart >/dev/null 2>&1
+	done
+}
+
 # ---------------------------------------------------------------- battery
 
 # The kernel's capacity comes from the factory 1250 mAh curve, so with another
@@ -511,6 +556,7 @@ while :; do
 	say "s) WiFi: status"
 	say "f) console font"
 	say "p) backlight and idle"
+	say "r) key repeat"
 	say "b) battery"
 	say ""
 	ask "Choose [Enter=quit]: "
@@ -520,6 +566,7 @@ while :; do
 	s) wifi_status ;;
 	f) font_menu ;;
 	p) backlight_menu ;;
+	r) repeat_menu ;;
 	b) battery_screen ;;
 	"") clear; exit 0 ;;
 	esac

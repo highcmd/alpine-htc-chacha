@@ -1,10 +1,11 @@
 #!/sbin/openrc-run
-# Backlights off after IDLE_TIMEOUT seconds without keys/touches (chacha-idle).
+# Backlights off after IDLE_TIMEOUT seconds without keys/touches, held-key
+# repeat (chacha-idle).
 # Kernel console blanking is switched off: on msm_fb it only clears the picture.
 
 description="Switch the backlights off when idle"
 command="/usr/local/bin/chacha-idle"
-command_args="-t ${IDLE_TIMEOUT:-300}"
+command_args="-t ${IDLE_TIMEOUT:-300} -r ${KEY_REPEAT_DELAY:-400} -p ${KEY_REPEAT_PERIOD:-100}"
 command_background=true
 pidfile="/run/${RC_SVCNAME}.pid"
 
