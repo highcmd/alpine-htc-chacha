@@ -200,3 +200,10 @@ Not tested: a successful connect (2.4 GHz network unavailable).
 
 2026-10-26: busybox getty defaults to TERM=vt102 (no colours, so ssh sessions were monochrome);
 inittab now passes "linux" as the getty TERM argument.
+
+2026-10-26: CDDA 0.8-branch built in an armhf Alpine chroot (qemu), g++ 15 with
+-std=gnu++98 -fpermissive; musl lacks execinfo.h -> stub header (backtrace returns 0).
+Command-line LDFLAGS replaces the Makefile's -lncursesw, so it is passed explicitly.
+Runs on the phone (main menu checked in a tmux 80x26 pane).
+WiFi from the iPhone hotspot dropped (SCANNING) while wlan0 kept its lease and default
+route (metric 211), so apk hung; worked around with a metric-100 route via usb0.

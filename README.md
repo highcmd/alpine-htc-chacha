@@ -284,3 +284,18 @@ Telefon ma trasę domyślną przez `172.16.42.2` z metryką 500 (WiFi ma pierwsz
    → własne usługi `wpa_supplicant-chacha` i `ntpd-legacy`; `rc_cgroup_mode="legacy"`.
 6. Brak RTC → initramfs ustawia zegar z pliku swclock, potem ntpd.
 7. Wyszukiwanie słowa w `/proc/cmdline`: HBOOT dodaje `board_chacha.debug_uart=…`.
+
+### Cataclysm: DDA 0.8
+
+`sudo scripts/build-cdda.sh` kompiluje grę (gałąź `0.8-branch`, ncurses) w chroocie Alpine
+armhf przez qemu (~30 min na 16 wątkach) i tworzy `out/cataclysm-0.8-armhf.tar.gz`.
+Instalacja na telefonie:
+
+```sh
+apk add ncurses-libs ncurses-terminfo-base libintl libstdc++
+ssh root@172.16.42.1 'tar -xzf - -C /opt' < out/cataclysm-0.8-armhf.tar.gz
+# /usr/local/bin/cataclysm: cd /opt/cataclysm && exec ./cataclysm "$@"
+```
+
+Gra potrzebuje co najmniej 80x24, czyli czcionki 6x12 (`ter-112n` / `ter-212n`).
+Zapisy trafiają do `/opt/cataclysm/save`.
