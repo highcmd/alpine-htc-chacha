@@ -1,0 +1,15 @@
+#!/sbin/openrc-run
+# busybox ntpd without OpenRC capabilities: kernel 2.6.35 has no ambient
+# capabilities, so the stock /etc/init.d/ntpd fails with "Could not set iab".
+
+name="busybox ntpd"
+command="/usr/sbin/ntpd"
+command_args="${NTPD_OPTS:--N -p pool.ntp.org} -n"
+pidfile="/run/$RC_SVCNAME.pid"
+command_background=true
+
+depend() {
+	need net
+	provide ntp-client
+	use dns
+}

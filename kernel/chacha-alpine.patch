@@ -1,0 +1,39 @@
+diff --git a/arch/arm/mm/Kconfig b/arch/arm/mm/Kconfig
+index 460839e9..c6823021 100755
+--- a/arch/arm/mm/Kconfig
++++ b/arch/arm/mm/Kconfig
+@@ -720,7 +720,7 @@ config TLS_REG_EMUL
+ config HAS_TLS_REG
+ 	bool
+ 	depends on !TLS_REG_EMUL
+-	default y if SMP || CPU_32v7
++	default y if SMP || CPU_32v7 || CPU_32v6K
+ 	help
+ 	  This selects support for the CP15 thread register.
+ 	  It is defined to be available on some ARMv6 processors (including
+diff --git a/drivers/video/msm/msm_fb.c b/drivers/video/msm/msm_fb.c
+index f99eb242..2de32bd8 100755
+--- a/drivers/video/msm/msm_fb.c
++++ b/drivers/video/msm/msm_fb.c
+@@ -71,7 +71,7 @@ extern wait_queue_head_t panel_update_wait_queue;
+ 
+ #define DLOG(mask, fmt, args...) \
+ do { \
+-	if ((msmfb_debug_mask | SUSPEND_RESUME) & mask) \
++	if (msmfb_debug_mask & mask) \
+ 		PR_DISP_INFO("msmfb: "fmt, ##args); \
+ } while (0)
+ #define BITS_PER_PIXEL(info) (info->fb->var.bits_per_pixel)
+diff --git a/kernel/timeconst.pl b/kernel/timeconst.pl
+index eb51d76e..04612394 100755
+--- a/kernel/timeconst.pl
++++ b/kernel/timeconst.pl
+@@ -370,7 +370,7 @@ if ($hz eq '--can') {
+ 	}
+ 
+ 	@val = @{$canned_values{$hz}};
+-	if (!defined(@val)) {
++	if (!@val) {
+ 		@val = compute_values($hz);
+ 	}
+ 	output($hz, @val);

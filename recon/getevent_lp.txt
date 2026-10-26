@@ -1,0 +1,83 @@
+add device 1: /dev/input/event7
+  name:     "proximity"
+  events:
+    ABS (0003): ABS_DISTANCE          : value 0, min 0, max 1, fuzz 0, flat 0, resolution 0
+  input props:
+    <not available
+add device 2: /dev/input/event6
+  name:     "lightsensor-level"
+  events:
+    ABS (0003): ABS_MISC              : value 4, min 0, max 9, fuzz 0, flat 0, resolution 0
+  input props:
+    <not available
+add device 3: /dev/input/event5
+  name:     "compass"
+  events:
+    ABS (0003): ABS_X                 : value -39, min -1872, max 1872, fuzz 0, flat 0, resolution 0
+                ABS_Y                 : value -714, min -1872, max 1872, fuzz 0, flat 0, resolution 0
+                ABS_Z                 : value -109, min -1872, max 1872, fuzz 0, flat 0, resolution 0
+                ABS_RX                : value 0, min 0, max 360, fuzz 0, flat 0, resolution 0
+                ABS_RY                : value 0, min -180, max 180, fuzz 0, flat 0, resolution 0
+                ABS_RZ                : value 0, min -90, max 90, fuzz 0, flat 0, resolution 0
+                ABS_THROTTLE          : value 0, min -30, max 85, fuzz 0, flat 0, resolution 0
+                ABS_RUDDER            : value -1, min -32768, max 3, fuzz 0, flat 0, resolution 0
+                ABS_WHEEL             : value 0, min -32768, max 3, fuzz 0, flat 0, resolution 0
+                ABS_GAS               : value 0, min 0, max 65535, fuzz 0, flat 0, resolution 0
+                ABS_BRAKE             : value 0, min -2048, max 2032, fuzz 0, flat 0, resolution 0
+                ABS_HAT0X             : value 0, min -2048, max 2032, fuzz 0, flat 0, resolution 0
+                ABS_HAT0Y             : value 0, min -2048, max 2032, fuzz 0, flat 0, resolution 0
+  input props:
+    <not available
+add device 4: /dev/input/event4
+  name:     "chacha-keypad"
+  events:
+    KEY (0001): KEY_BACKSPACE         KEY_TAB               KEY_Q                 KEY_W                
+                KEY_E                 KEY_R                 KEY_T                 KEY_Y                
+                KEY_U                 KEY_I                 KEY_O                 KEY_P                
+                KEY_ENTER             KEY_A                 KEY_S                 KEY_D                
+                KEY_F                 KEY_G                 KEY_H                 KEY_J                
+                KEY_K                 KEY_L                 KEY_LEFTSHIFT         KEY_Z                
+                KEY_X                 KEY_C                 KEY_V                 KEY_B                
+                KEY_N                 KEY_M                 KEY_COMMA             KEY_DOT              
+                KEY_LEFTALT           KEY_SPACE             KEY_UP                KEY_LEFT             
+                KEY_RIGHT             KEY_END               KEY_DOWN              KEY_VOLUMEDOWN       
+                KEY_VOLUMEUP          KEY_POWER             KEY_F13               KEY_F14              
+                KEY_QUESTION          KEY_SEND             
+  input props:
+    <not available
+add device 5: /dev/input/event3
+  name:     "cy8c-touchscreen"
+  events:
+    ABS (0003): ABS_MT_TOUCH_MAJOR    : value 0, min 0, max 255, fuzz 0, flat 0, resolution 0
+                ABS_MT_WIDTH_MAJOR    : value 0, min 0, max 30, fuzz 0, flat 0, resolution 0
+                ABS_MT_POSITION_X     : value 0, min 17, max 1007, fuzz 0, flat 0, resolution 0
+                ABS_MT_POSITION_Y     : value 0, min 22, max 870, fuzz 0, flat 0, resolution 0
+                ABS_MT_PRESSURE       : value 0, min 0, max 255, fuzz 0, flat 0, resolution 0
+  input props:
+    <not available
+add device 6: /dev/input/event2
+  name:     "projector-Keypad"
+  events:
+    KEY (0001): KEY_HOME              KEY_MENU              KEY_WAKEUP            KEY_BACK             
+  input props:
+    <not available
+add device 7: /dev/input/event1
+  name:     "projector_input"
+  events:
+    KEY (0001): BTN_2                 BTN_TOUCH            
+    ABS (0003): ABS_X                 : value 0, min 0, max 480, fuzz 0, flat 0, resolution 0
+                ABS_Y                 : value 0, min 0, max 320, fuzz 0, flat 0, resolution 0
+                ABS_HAT0X             : value 0, min 0, max 480, fuzz 0, flat 0, resolution 0
+                ABS_HAT0Y             : value 0, min 0, max 320, fuzz 0, flat 0, resolution 0
+                ABS_PRESSURE          : value 0, min 0, max 255, fuzz 0, flat 0, resolution 0
+                ABS_TOOL_WIDTH        : value 0, min 0, max 15, fuzz 0, flat 0, resolution 0
+  input props:
+    <not available
+add device 8: /dev/input/event0
+  name:     "h2w headset"
+  events:
+    KEY (0001): KEY_END               KEY_MUTE              KEY_VOLUMEDOWN        KEY_VOLUMEUP         
+                KEY_NEXTSONG          KEY_PLAYPAUSE         KEY_PREVIOUSSONG      KEY_MEDIA            
+                KEY_SEND             
+  input props:
+    <not available

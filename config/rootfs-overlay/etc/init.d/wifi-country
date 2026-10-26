@@ -1,0 +1,21 @@
+#!/sbin/openrc-run
+# bcm4329 firmware boots with a US country code (channels 1-11 only).
+
+description="Set WiFi regulatory country on the bcm4329 driver"
+
+depend() {
+	need wpa_supplicant-chacha
+}
+
+start() {
+	ebegin "Setting WiFi country to ${WIFI_COUNTRY:-PL}"
+	# the driver refuses while a scan is running (wpa_supplicant scans at start)
+	local i=0
+	while [ $i -lt 15 ]; do
+		/usr/local/bin/wlpriv wlan0 COUNTRY "${WIFI_COUNTRY:-PL}" 2>/dev/null | grep -q OK && break
+		sleep 2
+		i=$((i + 1))
+	done
+	[ $i -lt 15 ]
+	eend $?
+}

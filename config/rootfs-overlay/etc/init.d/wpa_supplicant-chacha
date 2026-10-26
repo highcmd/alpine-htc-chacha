@@ -1,0 +1,26 @@
+#!/sbin/openrc-run
+# wpa_supplicant for the bcm4329 wext driver. The stock service runs
+# "checkpath /var/run/wpa_supplicant", which fails on kernel 2.6.35
+# ("Symbolic link loop" through the /var/run -> /run symlink).
+
+description="WPA supplicant (wext) for wlan0"
+command="/sbin/wpa_supplicant"
+command_args="-D wext -s -i wlan0 -c /etc/wpa_supplicant/wpa_supplicant.conf -P /run/${RC_SVCNAME}.pid -B"
+pidfile="/run/${RC_SVCNAME}.pid"
+provide="wpa_supplicant"
+
+depend() {
+	need localmount
+	after modules
+	before networking
+}
+
+start_pre() {
+	mkdir -p /run/wpa_supplicant
+	# the driver creates wlan0 a few seconds after the module is loaded
+	local i=0
+	while [ ! -e /sys/class/net/wlan0 ] && [ $i -lt 15 ]; do
+		sleep 1
+		i=$((i + 1))
+	done
+}

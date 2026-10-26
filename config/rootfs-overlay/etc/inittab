@@ -1,0 +1,17 @@
+# /etc/inittab for HTC ChaCha (busybox init)
+
+# Rescue shell over USB RNDIS before OpenRC: `nc 172.16.42.1 23` from the host
+# still works if a service hangs (usb0 is configured by the initramfs).
+::sysinit:/bin/sh -c "/bin/busybox nc -lk -s 172.16.42.1 -p 23 -e /bin/sh &"
+# Kernel 2.6.35 has no getrandom() and gathers little entropy: without haveged
+# OpenSSL (sshd -G in the deptree run) blocks on /dev/random for minutes.
+::sysinit:/usr/sbin/haveged -w 1024
+::sysinit:/sbin/openrc sysinit
+::sysinit:/sbin/openrc boot
+::wait:/sbin/openrc default
+
+tty1::respawn:/sbin/getty -n -l /usr/local/bin/autologin 38400 tty1
+tty2::respawn:/sbin/getty 38400 tty2
+
+::ctrlaltdel:/sbin/reboot
+::shutdown:/sbin/openrc shutdown

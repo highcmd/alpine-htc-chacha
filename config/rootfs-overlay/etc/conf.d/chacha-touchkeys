@@ -1,0 +1,7 @@
+# Linux keycodes, "+" joins a combo. Interpreted by the console keymap
+# (/etc/keymaps/chacha.map): 183 = SYM = Control, 231 = Esc, 15 = Tab.
+TOUCHKEYS_HOME="183+48"     # Ctrl+B (tmux prefix)
+TOUCHKEYS_MENU="15"         # Tab
+TOUCHKEYS_BACK="231"        # Esc
+TOUCHKEYS_SEARCH="183+19"   # Ctrl+R (shell history search)
+TOUCHKEYS_ARGS="-y 700"

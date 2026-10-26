@@ -1,0 +1,4 @@
+#!/bin/sh
+# First boot: grow the root filesystem (written as a 512 MB image) to the
+# whole SD card partition, then remove this script.
+resize2fs /dev/mmcblk0p1 && rm -f "$0"

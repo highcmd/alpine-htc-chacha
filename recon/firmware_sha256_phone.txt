@@ -1,0 +1,7 @@
+0fd13767507874a2d3ef9bc8b69d88eb281de92c7467e0f688f78e6f260d1c70  bcm4329.hcd
+7880851206587c562c960246467336e178af7e82aea43e25c08e67b3a2636a6c  fw_bcm4329.bin
+46f0ce9e97e32e0aacee8a8491da23aebc867dba27cfbefae0807211046a647d  fw_bcm4329_apsta.bin
+c8a10673b809f6eeec2d831042530e21f228dbcc34ba01d4fd2fbc7035a1bd92  yamato_pfp.fw
+0c2afcdacc437f754e5cbe438ffa113f25b931e78d32f6b2875fc76b2e85cee4  yamato_pm4.fw
+3e294a97d50bc66f9fd71b443cbbde756dd9b915da87fd0f28f1baa68b7d0d62  /system/lib/modules/bcm4329.ko
+sha256sum: can't open '/data/misc/wifi/wpa_supplicant/calibration': No such file or directory

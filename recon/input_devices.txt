@@ -1,0 +1,73 @@
+I: Bus=0000 Vendor=0000 Product=0000 Version=0000
+N: Name="h2w headset"
+P: Phys=
+S: Sysfs=/devices/virtual/input/input0
+U: Uniq=
+H: Handlers=event0 keyreset 
+B: EV=3
+B: KEY=84 0 38 0 e0800 0 0 0
+
+I: Bus=0000 Vendor=0000 Product=0000 Version=0000
+N: Name="projector_input"
+P: Phys=
+S: Sysfs=/devices/virtual/input/input1
+U: Uniq=
+H: Handlers=event1 
+B: EV=b
+B: KEY=400 0 4 0 0 0 0 0 0 0 0
+B: ABS=11030003
+
+I: Bus=0019 Vendor=0123 Product=5220 Version=0100
+N: Name="projector-Keypad"
+P: Phys=input2
+S: Sysfs=/devices/virtual/input/input2
+U: Uniq=
+H: Handlers=event2 
+B: EV=3
+B: KEY=40008800 40 0 0 0
+
+I: Bus=0000 Vendor=0000 Product=0000 Version=0000
+N: Name="cy8c-touchscreen"
+P: Phys=
+S: Sysfs=/devices/virtual/input/input3
+U: Uniq=
+H: Handlers=event3 
+B: EV=9
+B: ABS=4650000 0
+
+I: Bus=0000 Vendor=0000 Product=0000 Version=0000
+N: Name="chacha-keypad"
+P: Phys=
+S: Sysfs=/devices/virtual/input/input4
+U: Uniq=
+H: Handlers=sysrq event4 keyreset 
+B: EV=3
+B: KEY=80 400000 1800000 0 1c1e80 0 31ff47f d3ffc000
+
+I: Bus=0000 Vendor=0000 Product=0000 Version=0000
+N: Name="compass"
+P: Phys=
+S: Sysfs=/devices/virtual/input/input5
+U: Uniq=
+H: Handlers=event5 
+B: EV=9
+B: ABS=307ff
+
+I: Bus=0000 Vendor=0000 Product=0000 Version=0000
+N: Name="lightsensor-level"
+P: Phys=
+S: Sysfs=/devices/virtual/input/input6
+U: Uniq=
+H: Handlers=event6 
+B: EV=9
+B: ABS=100 0
+
+I: Bus=0000 Vendor=0000 Product=0000 Version=0000
+N: Name="proximity"
+P: Phys=
+S: Sysfs=/devices/virtual/input/input7
+U: Uniq=
+H: Handlers=event7 
+B: EV=9
+B: ABS=2000000
+

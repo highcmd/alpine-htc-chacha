@@ -1,0 +1,1 @@
+*/15 * * * * touch /var/lib/misc/openrc-shutdowntime

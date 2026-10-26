@@ -1,0 +1,1 @@
+Linux localhost 2.6.36.1-Simplicit-ULTiMATE #21 PREEMPT Mon Jul 21 16:00:20 MDT 2014 armv6l GNU/Linux

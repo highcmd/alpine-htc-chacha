@@ -1,0 +1,17 @@
+== bits_per_pixel: 32
+== blank: 
+== console: 
+== cursor: 
+== dev: 29:0
+== mode: 
+== modes: U:480x320p-0
+== name: msmfb302_0
+== pan: 0,320
+== rotate: 0
+== state: 0
+== stride: 1920
+== uevent: MAJOR=29
+MINOR=0
+DEVNAME=fb0
+== virtual_size: 480,640
+lrwxrwxrwx root     root              1980-01-05 13:12 fb0 -> ../../devices/platform/msm_panel.1/graphics/fb0

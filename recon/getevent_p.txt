@@ -1,0 +1,76 @@
+add device 1: /dev/input/event7
+  name:     "proximity"
+  events:
+    ABS (0003): 0019  : value 0, min 0, max 1, fuzz 0, flat 0, resolution 0
+  input props:
+    <not available
+add device 2: /dev/input/event6
+  name:     "lightsensor-level"
+  events:
+    ABS (0003): 0028  : value 4, min 0, max 9, fuzz 0, flat 0, resolution 0
+  input props:
+    <not available
+add device 3: /dev/input/event5
+  name:     "compass"
+  events:
+    ABS (0003): 0000  : value -39, min -1872, max 1872, fuzz 0, flat 0, resolution 0
+                0001  : value -714, min -1872, max 1872, fuzz 0, flat 0, resolution 0
+                0002  : value -112, min -1872, max 1872, fuzz 0, flat 0, resolution 0
+                0003  : value 0, min 0, max 360, fuzz 0, flat 0, resolution 0
+                0004  : value 0, min -180, max 180, fuzz 0, flat 0, resolution 0
+                0005  : value 0, min -90, max 90, fuzz 0, flat 0, resolution 0
+                0006  : value 0, min -30, max 85, fuzz 0, flat 0, resolution 0
+                0007  : value -1, min -32768, max 3, fuzz 0, flat 0, resolution 0
+                0008  : value 0, min -32768, max 3, fuzz 0, flat 0, resolution 0
+                0009  : value 0, min 0, max 65535, fuzz 0, flat 0, resolution 0
+                000a  : value 0, min -2048, max 2032, fuzz 0, flat 0, resolution 0
+                0010  : value 0, min -2048, max 2032, fuzz 0, flat 0, resolution 0
+                0011  : value 0, min -2048, max 2032, fuzz 0, flat 0, resolution 0
+  input props:
+    <not available
+add device 4: /dev/input/event4
+  name:     "chacha-keypad"
+  events:
+    KEY (0001): 000e  000f  0010  0011  0012  0013  0014  0015 
+                0016  0017  0018  0019  001c  001e  001f  0020 
+                0021  0022  0023  0024  0025  0026  002a  002c 
+                002d  002e  002f  0030  0031  0032  0033  0034 
+                0038  0039  0067  0069  006a  006b  006c  0072 
+                0073  0074  00b7  00b8  00d6  00e7 
+  input props:
+    <not available
+add device 5: /dev/input/event3
+  name:     "cy8c-touchscreen"
+  events:
+    ABS (0003): 0030  : value 0, min 0, max 255, fuzz 0, flat 0, resolution 0
+                0032  : value 0, min 0, max 30, fuzz 0, flat 0, resolution 0
+                0035  : value 0, min 17, max 1007, fuzz 0, flat 0, resolution 0
+                0036  : value 0, min 22, max 870, fuzz 0, flat 0, resolution 0
+                003a  : value 0, min 0, max 255, fuzz 0, flat 0, resolution 0
+  input props:
+    <not available
+add device 6: /dev/input/event2
+  name:     "projector-Keypad"
+  events:
+    KEY (0001): 0066  008b  008f  009e 
+  input props:
+    <not available
+add device 7: /dev/input/event1
+  name:     "projector_input"
+  events:
+    KEY (0001): 0102  014a 
+    ABS (0003): 0000  : value 0, min 0, max 480, fuzz 0, flat 0, resolution 0
+                0001  : value 0, min 0, max 320, fuzz 0, flat 0, resolution 0
+                0010  : value 0, min 0, max 480, fuzz 0, flat 0, resolution 0
+                0011  : value 0, min 0, max 320, fuzz 0, flat 0, resolution 0
+                0018  : value 0, min 0, max 255, fuzz 0, flat 0, resolution 0
+                001c  : value 0, min 0, max 15, fuzz 0, flat 0, resolution 0
+  input props:
+    <not available
+add device 8: /dev/input/event0
+  name:     "h2w headset"
+  events:
+    KEY (0001): 006b  0071  0072  0073  00a3  00a4  00a5  00e2 
+                00e7 
+  input props:
+    <not available

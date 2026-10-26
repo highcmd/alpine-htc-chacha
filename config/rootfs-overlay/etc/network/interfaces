@@ -1,0 +1,13 @@
+auto lo
+iface lo inet loopback
+
+# USB RNDIS to the laptop (host runs config/host-usb-nat.sh for internet)
+auto usb0
+iface usb0 inet static
+	address 172.16.42.1
+	netmask 255.255.255.0
+	post-up ip route add default via 172.16.42.2 metric 500 || true
+	post-up [ -s /etc/resolv.conf ] || echo "nameserver 1.1.1.1" > /etc/resolv.conf
+
+auto wlan0
+iface wlan0 inet dhcp

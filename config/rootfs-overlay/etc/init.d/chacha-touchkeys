@@ -1,0 +1,12 @@
+#!/sbin/openrc-run
+# Capacitive keys below the LCD (Home, Menu, Back, Search) -> key presses.
+
+description="HTC ChaCha touch keys"
+command="/usr/local/bin/chacha-touchkeys"
+command_args="${TOUCHKEYS_ARGS} ${TOUCHKEYS_HOME} ${TOUCHKEYS_MENU} ${TOUCHKEYS_BACK} ${TOUCHKEYS_SEARCH}"
+command_background=true
+pidfile="/run/${RC_SVCNAME}.pid"
+
+depend() {
+	after mdev loadkeys
+}

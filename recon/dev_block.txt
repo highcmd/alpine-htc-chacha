@@ -1,0 +1,32 @@
+brw------- root     root       7,   0 1980-01-05 13:08 loop0
+brw------- root     root       7,   1 1980-01-05 13:08 loop1
+brw------- root     root       7,   2 1980-01-05 13:08 loop2
+brw------- root     root       7,   3 1980-01-05 13:08 loop3
+brw------- root     root       7,   4 1980-01-05 13:08 loop4
+brw------- root     root       7,   5 1980-01-05 13:08 loop5
+brw------- root     root       7,   6 1980-01-05 13:08 loop6
+brw------- root     root       7,   7 1980-01-05 13:08 loop7
+brw------- root     root      31,   0 1980-01-05 13:08 mtdblock0
+brw------- root     root      31,   1 1980-01-05 13:08 mtdblock1
+brw------- root     root      31,   2 1980-01-05 13:08 mtdblock2
+brw------- root     root      31,   3 1980-01-05 13:08 mtdblock3
+brw------- root     root      31,   4 1980-01-05 13:08 mtdblock4
+brw------- root     root      31,   5 1980-01-05 13:08 mtdblock5
+brw------- root     root      31,   6 1980-01-05 13:08 mtdblock6
+drwx------ root     root              1980-01-05 13:08 vold
+brw------- root     root     253,   0 1980-01-05 13:08 zram0
+crw------- root     root      90,   0 1980-01-05 13:08 mtd0
+crw------- root     root      90,   1 1980-01-05 13:08 mtd0ro
+crw------- root     root      90,   2 1980-01-05 13:08 mtd1
+crw------- root     root      90,   3 1980-01-05 13:08 mtd1ro
+crw------- root     root      90,   4 1980-01-05 13:08 mtd2
+crw------- root     root      90,   5 1980-01-05 13:08 mtd2ro
+crw------- root     root      90,   6 1980-01-05 13:08 mtd3
+crw------- root     root      90,   7 1980-01-05 13:08 mtd3ro
+crw------- root     root      90,   8 1980-01-05 13:08 mtd4
+crw------- root     root      90,   9 1980-01-05 13:08 mtd4ro
+crw------- root     root      90,  10 1980-01-05 13:08 mtd5
+crw------- root     root      90,  11 1980-01-05 13:08 mtd5ro
+crw------- root     root      90,  12 1980-01-05 13:08 mtd6
+crw------- root     root      90,  13 1980-01-05 13:08 mtd6ro
+/dev/block/platform/*/by-name: No such file or directory

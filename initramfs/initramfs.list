@@ -1,0 +1,13 @@
+# gen_init_cpio list for the ChaCha debug/boot initramfs (see scripts/build-bootimg.sh)
+dir /dev 0755 0 0
+nod /dev/console 0600 0 0 c 5 1
+nod /dev/null 0666 0 0 c 1 3
+dir /bin 0755 0 0
+file /bin/busybox @BUSYBOX@ 0755 0 0
+file /init init 0755 0 0
+dir /proc 0755 0 0
+dir /sys 0755 0 0
+dir /tmp 1777 0 0
+dir /etc 0755 0 0
+dir /mnt 0755 0 0
+dir /sbin 0755 0 0

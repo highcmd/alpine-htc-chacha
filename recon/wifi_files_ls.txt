@@ -1,0 +1,29 @@
+
+/system/etc/firmware:
+-rw-r--r-- root     root        17647 2008-08-01 01:00 bcm4329.hcd
+-rw-r--r-- root     root       263780 2008-08-01 01:00 fw_bcm4329.bin
+-rw-r--r-- root     root       265840 2008-08-01 01:00 fw_bcm4329_apsta.bin
+-rw-r--r-- root     root         1156 2008-08-01 01:00 yamato_pfp.fw
+-rw-r--r-- root     root         9220 2008-08-01 01:00 yamato_pm4.fw
+/system/vendor/firmware: No such file or directory
+
+/system/etc/wifi:
+-rw-r--r-- root     root           77 2008-08-01 01:00 wpa_supplicant.conf
+
+/system/lib/modules:
+-rw-r--r-- root     root       246656 2008-08-01 01:00 bcm4329.ko
+
+/data/misc/wifi:
+-rw-rw---- system   wifi           21 1980-01-05 13:09 entropy.bin
+-rw------- system   system         58 1980-01-05 23:32 ipconfig.txt
+drwxrwx--- wifi     wifi              1980-01-05 13:09 sockets
+-rw------- system   system         33 2022-10-02 01:50 softap.conf
+drwxrwx--- wifi     wifi              2022-10-02 01:47 wpa_supplicant
+-rw-rw---- system   wifi          414 1980-01-05 23:32 wpa_supplicant.conf
+
+/data/misc/wifi/sockets:
+srwxrwx--- wifi     wifi              1980-01-05 13:09 wlan0
+srw-rw---- system   wifi              1980-01-05 13:09 wpa_ctrl_436-1
+srw-rw---- system   wifi              1980-01-05 13:09 wpa_ctrl_436-2
+
+/data/misc/wifi/wpa_supplicant:

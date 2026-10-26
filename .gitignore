@@ -1,0 +1,27 @@
+# build outputs and downloads (scripts/)
+/work/
+/out/
+
+# personal data: partition backups, SD rootfs backup
+/backup/
+
+# Broadcom firmware copied from the phone (not redistributable)
+/recon/firmware/
+/recon/config.gz
+
+# raw dumps containing IMEI / serial number / MAC address
+/recon/dmesg.txt
+/recon/getprop.txt
+/recon/proc_cmdline.txt
+/recon/fastboot_getvar_all.txt
+/tests/
+
+# working directories from the original bring-up session
+/src/
+/tools/
+/dl/
+/images/
+/rootfs/
+/initramfs/out/
+/initramfs/root/
+/initramfs/hybrid/

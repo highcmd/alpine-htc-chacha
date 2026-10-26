@@ -1,0 +1,1 @@
+Linux version 2.6.36.1-Simplicit-ULTiMATE (flux@Ubuntu-VirtualBox) (gcc version 4.7 (GCC) ) #21 PREEMPT Mon Jul 21 16:00:20 MDT 2014

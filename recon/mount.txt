@@ -1,0 +1,17 @@
+rootfs / rootfs ro,relatime 0 0
+tmpfs /dev tmpfs rw,nosuid,relatime,mode=755 0 0
+devpts /dev/pts devpts rw,relatime,mode=600 0 0
+proc /proc proc rw,relatime 0 0
+sysfs /sys sysfs rw,relatime 0 0
+/sys/kernel/debug /sys/kernel/debug debugfs rw,relatime 0 0
+none /acct cgroup rw,relatime,cpuacct 0 0
+none /sys/fs/cgroup tmpfs rw,relatime,mode=750,gid=1000 0 0
+none /sys/fs/cgroup/memory cgroup rw,relatime,memory 0 0
+tmpfs /mnt/asec tmpfs rw,relatime,mode=755,gid=1000 0 0
+tmpfs /mnt/obb tmpfs rw,relatime,mode=755,gid=1000 0 0
+tmpfs /mnt/fuse tmpfs rw,relatime,mode=775,gid=1000 0 0
+none /dev/cpuctl cgroup rw,relatime,cpu 0 0
+tmpfs /app-cache tmpfs rw,relatime,size=8192k 0 0
+/dev/block/mtdblock3 /system yaffs2 ro,relatime 0 0
+/dev/block/mtdblock5 /data yaffs2 rw,nosuid,nodev,relatime 0 0
+/dev/block/mtdblock4 /cache yaffs2 rw,nosuid,nodev,relatime 0 0
