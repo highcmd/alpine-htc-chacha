@@ -25,7 +25,7 @@ BOOTIMG_CMDLINE="console=null no_console_suspend=1 androidboot.hardware=chacha u
 
 ROOTFS=${ROOTFS:-$WORK/rootfs}
 ROOTFS_IMG_SIZE=${ROOTFS_IMG_SIZE:-512M}
-ROOTFS_PACKAGES="alpine-base openssh-client openssh-server tmux wpa_supplicant wireless-tools kbd font-terminus e2fsprogs e2fsprogs-extra haveged"
+ROOTFS_PACKAGES="alpine-base openssh-client openssh-server tmux wpa_supplicant wireless-tools kbd font-terminus e2fsprogs e2fsprogs-extra haveged vim git bash mc"
 # Firmware copied from the phone's /system/etc/firmware (not redistributable)
 FIRMWARE_DIR=${FIRMWARE_DIR:-$TOP/recon/firmware}
 
