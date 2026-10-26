@@ -185,3 +185,6 @@ Decyzja użytkownika: czysty Alpine armhf v3.24 na SD, kernel kandydat 1, karta 
 - Test RAM (fastboot boot): 16 kolorów OK (paleta VGA w zrzucie /dev/fb0). Tło tylko 8 kolorów (ograniczenie konsoli Linuksa).
 - Brak 256/truecolor: przybliżanie 38;5;n w konsoli dopiero od kernela 3.16.
 - Zrzut ekranu: `head -c 614400 /dev/fb0` (480x320x4, pan 0,0) → PIL frombytes RGBA. Przy wygaszonej konsoli fb jest czarny.
+
+2026-10-26: flashed out/boot-alpine.img (colour kernel, sha256 b5fe5782…19c1) to boot;
+read back from /dev/mtd2ro matches. Boots to sshd in ~50 s.
