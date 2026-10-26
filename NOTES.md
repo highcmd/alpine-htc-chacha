@@ -245,3 +245,10 @@ chacha-idle block in tty_write_lock writing its notice (the shell held the write
 TIOCSTI ^Q released it, and the pending poweroff ran. Fixes: chacha-idle opens the
 console O_NONBLOCK (tty_write_lock uses trylock then); /etc/profile.d/chacha-console.sh
 runs stty -ixon on the local consoles. (TCXONC TCOON does not help: it only undoes TCOOFF.)
+
+## Battery readout in chacha-config
+/sys/class/power_supply/battery: batt_vol (mV), batt_current (mA), batt_temp (0.1 C),
+status, capacity (htc_battery percent from the factory 1250 mAh curve, meaningless with
+the user's custom larger cell). chacha-config shows voltage in the main menu and a
+"b) battery" screen refreshing every 5 s. Sign/direction of batt_current not verified.
+Also deployed the ^S fixes (chacha-idle O_NONBLOCK, profile.d/chacha-console.sh).

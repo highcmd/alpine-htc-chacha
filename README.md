@@ -257,6 +257,10 @@ współrzędne dotyku (próg paska klawiszy: `-y 700`).
   podświetlenie ekranu, klawiatury i przycisków (domyślnie 5 min, `/etc/conf.d/chacha-idle`).
   Klawisz, który budzi ekran, nie trafia do konsoli. Wygaszanie wbudowane w konsolę jest
   wyłączone, bo przy msm_fb czyściło tylko obraz, a podświetlenie zostawiało włączone.
+- `b`: bateria. Napięcie (`batt_vol`), status, ładowarka, prąd, temperatura; odświeża się
+  co 5 s. Napięcie widać też w menu głównym. Procent z kernela liczony jest z krzywej
+  fabrycznej baterii 1250 mAh, więc przy innym ogniwie miarodajne jest napięcie
+  (orientacyjnie 4,2 V = pełna, ~3,4 V = pusta).
 - Klawisz power: krótkie naciśnięcie gasi albo zapala ekran, przytrzymanie przez 3 s
   wyłącza telefon (`poweroff`). Power + głośność góra + głośność dół to sprzętowy reset
   HTC (`keyreset` w kernelu).

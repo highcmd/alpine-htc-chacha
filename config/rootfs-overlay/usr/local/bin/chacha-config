@@ -8,6 +8,7 @@ WPA="wpa_cli -i $IFACE"
 FONTDIR=/usr/share/consolefonts
 FONTCONF=/etc/conf.d/consolefont
 CONSOLE=/dev/tty1
+BATT=/sys/class/power_supply/battery
 SCR_W=480	# ChaCha panel, pixels
 SCR_H=320
 LETTERS="a b c d e f g h i j k l m n o p q r s t u v w x y z"
@@ -454,6 +455,46 @@ idle_menu() {
 	rc-service chacha-idle restart >/dev/null 2>&1
 }
 
+# ---------------------------------------------------------------- battery
+
+# The kernel's capacity comes from the factory 1250 mAh curve, so with another
+# cell the voltage (batt_vol, mV) is the honest figure.
+batt_mv() { cat $BATT/batt_vol 2>/dev/null; }
+batt_volts() { mv=$(batt_mv); [ -n "$mv" ] && printf '%d.%02d V' $((mv / 1000)) $((mv % 1000 / 10)); }
+
+batt_source() {
+	if [ "$(cat /sys/class/power_supply/ac/online 2>/dev/null)" = 1 ]; then echo AC
+	elif [ "$(cat /sys/class/power_supply/usb/online 2>/dev/null)" = 1 ]; then echo USB
+	else echo none; fi
+}
+
+batt_summary() { echo "$(batt_volts), $(cat $BATT/status 2>/dev/null)"; }
+
+batt_bar() {	# rough Li-ion scale: 3.40 V empty .. 4.20 V full
+	n=$(( ($1 - 3400) / 80 ))
+	[ $n -lt 0 ] && n=0
+	[ $n -gt 10 ] && n=10
+	printf '[%s%s]' "$(printf '%*s' $n '' | tr ' ' '#')" "$(printf '%*s' $((10 - n)) '' | tr ' ' '.')"
+}
+
+battery_screen() {
+	while :; do
+		header "battery"
+		mv=$(batt_mv)
+		t=$(cat $BATT/batt_temp 2>/dev/null)
+		say "voltage: $(batt_volts)"
+		say "         $(batt_bar ${mv:-0}) 3.4-4.2"
+		say "status:  $(cat $BATT/status 2>/dev/null)"
+		say "charger: $(batt_source)"
+		say "current: $(cat $BATT/batt_current 2>/dev/null) mA"
+		[ -n "$t" ] && say "temp:    $((t / 10)).$((t % 10)) C"
+		say "kernel%: $(cat $BATT/capacity 2>/dev/null) (factory)"
+		say ""
+		printf '[Enter=back, refresh 5 s] '
+		read -r -t 5 _ && return
+	done
+}
+
 # ---------------------------------------------------------------- main
 
 trap 'stty echo 2>/dev/null; rm -f /tmp/chacha-scan /tmp/chacha-nets /tmp/chacha-fonts /tmp/chacha-fonts.s' EXIT
@@ -463,12 +504,14 @@ while :; do
 	header "menu"
 	say "WiFi: $(wifi_summary)"
 	say "Font: $(font_current | sed "s/\.psf.*//")"
+	say "Batt: $(batt_summary)"
 	say ""
 	say "w) WiFi: scan and connect"
 	say "z) WiFi: saved networks"
 	say "s) WiFi: status"
 	say "f) console font"
 	say "p) backlight and idle"
+	say "b) battery"
 	say ""
 	ask "Choose [Enter=quit]: "
 	case $REPLY in
@@ -477,6 +520,7 @@ while :; do
 	s) wifi_status ;;
 	f) font_menu ;;
 	p) backlight_menu ;;
+	b) battery_screen ;;
 	"") clear; exit 0 ;;
 	esac
 done
