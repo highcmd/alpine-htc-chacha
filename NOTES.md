@@ -238,3 +238,10 @@ tty1. Tested by writing input_event structs to /dev/input/event4 (evdev injectio
 delivered to the grabbing client too); the long press was tested with a fake poweroff
 in a mount namespace only, not a real power-off.
 chacha-config UI translated to English (confirm is now y/N).
+
+2026-10-26: "idle froze the keyboard": tty1 output was stopped by ^S (SYM+S = Ctrl+S,
+XOFF); the shell slept in n_tty_write, so nothing echoed. A power long-press then made
+chacha-idle block in tty_write_lock writing its notice (the shell held the write lock).
+TIOCSTI ^Q released it, and the pending poweroff ran. Fixes: chacha-idle opens the
+console O_NONBLOCK (tty_write_lock uses trylock then); /etc/profile.d/chacha-console.sh
+runs stty -ixon on the local consoles. (TCXONC TCOON does not help: it only undoes TCOOFF.)

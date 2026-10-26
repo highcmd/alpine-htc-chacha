@@ -192,7 +192,8 @@ static void power_off(void)
 		restore_lights();
 		dark = 0;
 	}
-	fd = open(CONSOLE, O_WRONLY | O_NOCTTY);
+	/* non-blocking: a console stopped with ^S must not keep the phone on */
+	fd = open(CONSOLE, O_WRONLY | O_NOCTTY | O_NONBLOCK);
 	if (fd >= 0) {
 		const char msg[] = "\r\n\033[1;33m*** Powering off ***\033[0m\r\n";
 		if (write(fd, msg, sizeof(msg) - 1) < 0)
