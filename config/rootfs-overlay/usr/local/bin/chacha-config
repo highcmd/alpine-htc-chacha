@@ -1,0 +1,397 @@
+#!/bin/sh
+# chacha-config: WiFi and console font setup for the HTC ChaCha.
+# Menus use letters (digits need FN on the ChaCha keyboard); Enter = back.
+# Lines are kept short so the menus still fit with a 16x32 font (30x10).
+
+IFACE=wlan0
+WPA="wpa_cli -i $IFACE"
+FONTDIR=/usr/share/consolefonts
+FONTCONF=/etc/conf.d/consolefont
+CONSOLE=/dev/tty1
+SCR_W=480	# ChaCha panel, pixels
+SCR_H=320
+LETTERS="a b c d e f g h i j k l m n o p q r s t u v w x y z"
+
+[ "$(id -u)" = 0 ] || { echo "uruchom jako root"; exit 1; }
+
+say() { printf '%s\n' "$*"; }
+pause() { printf '\n[Enter] '; read -r _; }
+ask() {	# ask "prompt" -> $REPLY
+	printf '%s' "$1"
+	IFS= read -r REPLY || exit 0
+}
+confirm() {	# confirm "question" -> default no
+	ask "$1 [t/N] "
+	case $REPLY in t|T|y|Y) return 0 ;; esac
+	return 1
+}
+header() {
+	clear
+	say "== chacha-config: $1 =="
+	say ""
+}
+# letter_at N -> Nth letter (1-based)
+letter_at() { n_=$1; set -- $LETTERS; eval "printf %s \"\${$n_}\""; }
+# index_of LETTER -> 1-based index, empty if not a letter
+index_of() {
+	i=1
+	for l in $LETTERS; do
+		[ "$l" = "$1" ] && { echo $i; return; }
+		i=$((i + 1))
+	done
+}
+
+# ---------------------------------------------------------------- WiFi
+
+wpa_ok() {
+	$WPA ping 2>/dev/null | grep -q PONG && return 0
+	say "wpa_supplicant nie dziala:"
+	say "  rc-service wpa_supplicant-chacha restart"
+	pause
+	return 1
+}
+
+wifi_state() { $WPA status 2>/dev/null | sed -n "s/^$1=//p"; }
+
+wifi_ip() { ip -4 addr show dev $IFACE 2>/dev/null | sed -n 's/.*inet \([0-9.]*\).*/\1/p' | head -1; }
+
+wifi_summary() {
+	st=$(wifi_state wpa_state)
+	if [ "$st" = COMPLETED ]; then
+		echo "$(wifi_state ssid) ${WIFI_IP:-$(wifi_ip)}"
+	else
+		echo "${st:-brak} (niepolaczony)"
+	fi
+}
+
+sec_of() {	# scan flags -> short security label
+	case $1 in
+	*EAP*) echo EAP ;;
+	*SAE*) case $1 in *PSK*) echo WPA2 ;; *) echo WPA3 ;; esac ;;
+	*WPA2*) echo WPA2 ;;
+	*WPA*) echo WPA ;;
+	*WEP*) echo WEP ;;
+	*) echo open ;;
+	esac
+}
+
+# dBm -> 0..4 bars
+bars() {
+	s=${1#-}
+	if [ "$s" -le 55 ]; then echo "####"
+	elif [ "$s" -le 67 ]; then echo "### "
+	elif [ "$s" -le 78 ]; then echo "##  "
+	else echo "#   "
+	fi
+}
+
+wifi_scan() {
+	header "skanowanie"
+	wpa_ok || return
+	say "Skanuje..."
+	n=0
+	for try in 1 2 3; do
+		$WPA scan >/dev/null 2>&1
+		sleep 4
+		# bssid freq signal flags ssid; strongest first, one line per SSID
+		$WPA scan_results 2>/dev/null | tail -n +2 |
+			awk -F'\t' '$5 != ""' | sort -t "$(printf '\t')" -k3,3nr |
+			awk -F'\t' '!seen[$5]++' | head -26 > /tmp/chacha-scan
+		n=$(wc -l < /tmp/chacha-scan)
+		[ "$n" -gt 0 ] && break
+	done
+
+	saved=$($WPA list_networks 2>/dev/null | tail -n +2 | cut -f2)
+	cur=$(wifi_state ssid)
+	header "sieci ($n)"
+	i=1
+	while IFS="$(printf '\t')" read -r bssid freq sig flags ssid; do
+		ch=$(( (freq - 2407) / 5 ))
+		mark=" "
+		printf '%s\n' "$saved" | grep -qxF -- "$ssid" && mark="+"
+		[ "$ssid" = "$cur" ] && mark="*"
+		printf '%s)%s%-16.16s %s %-4s %2s\n' "$(letter_at $i)" "$mark" "$ssid" \
+			"$(bars "$sig")" "$(sec_of "$flags")" "$ch"
+		i=$((i + 1))
+	done < /tmp/chacha-scan
+	[ "$n" -eq 0 ] && say "Nic nie znaleziono."
+	say ""
+	say "* polaczona  + zapisana"
+	say "1) ukryta siec (wpisz SSID)"
+	ask "Wybierz [Enter=wstecz]: "
+	case $REPLY in
+	"") return ;;
+	1)
+		ask "SSID: "
+		[ -n "$REPLY" ] || return
+		wifi_connect "$REPLY" WPA2 hidden
+		return ;;
+	esac
+	k=$(index_of "$REPLY")
+	[ -n "$k" ] && [ "$k" -le "$n" ] || return
+	line=$(sed -n "${k}p" /tmp/chacha-scan)
+	flags=$(printf '%s' "$line" | cut -f4)
+	ssid=$(printf '%s' "$line" | cut -f5-)
+	wifi_connect "$ssid" "$(sec_of "$flags")" scanned
+}
+
+# wifi_connect SSID SECURITY scanned|hidden
+wifi_connect() {
+	ssid=$1 sec=$2 how=$3
+	header "polacz: $ssid"
+	case $sec in
+	EAP|WPA3|WEP)
+		say "Siec $sec nie jest obslugiwana"
+		say "(tylko WPA/WPA2-PSK i otwarte)."
+		pause
+		return ;;
+	esac
+
+	psk=""
+	if [ "$sec" != open ]; then
+		while :; do
+			printf 'Haslo: '
+			stty -echo 2>/dev/null
+			IFS= read -r psk
+			stty echo 2>/dev/null
+			echo
+			[ -n "$psk" ] || return
+			len=${#psk}
+			[ "$len" -ge 8 ] && [ "$len" -le 63 ] && break
+			say "Haslo WPA ma 8-63 znakow (jest $len)."
+		done
+		if confirm "Pokazac haslo?"; then
+			say "  $psk"
+			confirm "Poprawne?" || return
+		fi
+	fi
+
+	# drop older entries for this SSID
+	$WPA list_networks | tail -n +2 | while IFS="$(printf '\t')" read -r id s _; do
+		[ "$s" = "$ssid" ] && $WPA remove_network "$id" >/dev/null
+	done
+
+	id=$($WPA add_network | tail -1)
+	case $id in ''|*[!0-9]*) say "add_network: $id"; pause; return ;; esac
+	if [ "$how" = hidden ]; then
+		hex=$(printf '%s' "$ssid" | od -An -tx1 | tr -d ' \n')
+		$WPA set_network "$id" ssid "$hex" >/dev/null
+		$WPA set_network "$id" scan_ssid 1 >/dev/null
+	else
+		# scan_results prints SSIDs printf-escaped; P"..." parses that form
+		$WPA set_network "$id" ssid "P\"$ssid\"" >/dev/null
+	fi
+	if [ "$sec" = open ]; then
+		$WPA set_network "$id" key_mgmt NONE >/dev/null
+	else
+		$WPA set_network "$id" psk "\"$psk\"" | grep -q OK ||
+			{ say "Nie mozna ustawic hasla."; $WPA remove_network "$id" >/dev/null; pause; return; }
+	fi
+	$WPA select_network "$id" >/dev/null
+
+	printf 'Lacze'
+	ok=""
+	for t in $(seq 1 30); do
+		sleep 1
+		printf '.'
+		[ "$(wifi_state wpa_state)" = COMPLETED ] && { ok=1; break; }
+	done
+	echo
+	$WPA enable_network all >/dev/null
+
+	if [ -z "$ok" ]; then
+		say "Nie polaczono ($(wifi_state wpa_state))."
+		[ "$sec" != open ] && say "Zle haslo albo slaby sygnal."
+		if confirm "Zachowac te siec mimo to?"; then
+			$WPA save_config >/dev/null
+		else
+			$WPA remove_network "$id" >/dev/null
+			$WPA save_config >/dev/null
+		fi
+		pause
+		return
+	fi
+	$WPA save_config >/dev/null
+	say "Polaczono. Zapisano w"
+	say "  /etc/wpa_supplicant/wpa_supplicant.conf"
+
+	# udhcpc runs in the background from ifup (-b); ask it to renew now
+	printf 'DHCP'
+	pid=$(cat /var/run/udhcpc.$IFACE.pid 2>/dev/null)
+	if [ -n "$pid" ] && kill -0 "$pid" 2>/dev/null; then
+		kill -USR1 "$pid"
+	else
+		ifup -f $IFACE >/dev/null 2>&1 &
+	fi
+	WIFI_IP=""
+	for t in $(seq 1 20); do
+		sleep 1
+		printf '.'
+		WIFI_IP=$(wifi_ip)
+		[ -n "$WIFI_IP" ] && break
+	done
+	echo
+	if [ -n "$WIFI_IP" ]; then
+		say "Adres IP: $WIFI_IP"
+	else
+		say "Brak adresu z DHCP (jeszcze?)."
+	fi
+	pause
+}
+
+wifi_saved() {
+	while :; do
+		header "zapisane sieci"
+		wpa_ok || return
+		$WPA list_networks | tail -n +2 > /tmp/chacha-nets
+		n=$(wc -l < /tmp/chacha-nets)
+		i=1
+		while IFS="$(printf '\t')" read -r id ssid bssid flags; do
+			st=""
+			case $flags in *CURRENT*) st=" (polaczona)" ;; *DISABLED*) st=" (wylaczona)" ;; esac
+			printf '%s) %s%s\n' "$(letter_at $i)" "$ssid" "$st"
+			i=$((i + 1))
+		done < /tmp/chacha-nets
+		[ "$n" -eq 0 ] && say "Brak zapisanych sieci."
+		say ""
+		ask "Usunac ktora? [Enter=wstecz]: "
+		[ -n "$REPLY" ] || return
+		k=$(index_of "$REPLY")
+		[ -n "$k" ] && [ "$k" -le "$n" ] || continue
+		id=$(sed -n "${k}p" /tmp/chacha-nets | cut -f1)
+		ssid=$(sed -n "${k}p" /tmp/chacha-nets | cut -f2)
+		if confirm "Usunac \"$ssid\"?"; then
+			$WPA remove_network "$id" >/dev/null
+			$WPA save_config >/dev/null
+		fi
+	done
+}
+
+wifi_status() {
+	header "status WiFi"
+	wpa_ok || return
+	$WPA status | grep -E '^(wpa_state|ssid|bssid|freq|ip_address|key_mgmt)='
+	sig=$(iwconfig $IFACE 2>/dev/null | sed -n 's/.*Signal level[=:]\([-0-9]*\).*/\1/p')
+	[ -n "$sig" ] && say "signal=$sig dBm"
+	say "ip=$(wifi_ip)"
+	gw=$(ip route | sed -n "s/^default via \([0-9.]*\) dev $IFACE.*/\1/p" | head -1)
+	[ -n "$gw" ] && say "gateway=$gw"
+	pause
+}
+
+# ---------------------------------------------------------------- font
+
+# font_dims FILE -> "W H" from the PSF1/PSF2 header
+font_dims() {
+	set -- $(gzip -dc "$1" 2>/dev/null | head -c 32 | od -An -tu1)
+	if [ "$1" = 54 ] && [ "$2" = 4 ]; then
+		echo "8 $4"
+	elif [ "$1" = 114 ] && [ "$2" = 181 ]; then
+		shift 24
+		echo "$(( $5 + $6 * 256 )) $(( $1 + $2 * 256 ))"
+	fi
+}
+
+font_label() {	# font_label FILE -> "6x12 80x26"
+	set -- $(font_dims "$1")
+	[ -n "$1" ] || { echo "?"; return; }
+	echo "${1}x$2 $((SCR_W / $1))x$((SCR_H / $2))"
+}
+
+font_current() { sed -n 's/^consolefont="\{0,1\}\([^"]*\)"\{0,1\}/\1/p' "$FONTCONF"; }
+
+font_apply() { setfont -C "$CONSOLE" "$FONTDIR/$1" 2>&1; }
+
+font_try() {	# font_try NAME: preview, confirm (auto-revert), save
+	old=$(font_current)
+	err=$(font_apply "$1") || { say "setfont: $err"; pause; return; }
+	header "czcionka"
+	say "$1 ($(font_label "$FONTDIR/$1"))"
+	say ""
+	say "Podglad: abcdefghijklmnopqrstuvwxyz"
+	say "         ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+	say "         0123456789 []{}<>|\\~^\`"
+	say ""
+	say "Bez odpowiedzi w 20 s wraca"
+	say "poprzednia czcionka."
+	printf 'Zostawic? [t/N] '
+	if read -r -t 20 REPLY && case $REPLY in t|T|y|Y) true ;; *) false ;; esac; then
+		sed -i "s|^consolefont=.*|consolefont=\"$1\"|" "$FONTCONF"
+		say "Zapisano w $FONTCONF"
+		pause
+	else
+		echo
+		font_apply "$old" >/dev/null
+	fi
+}
+
+# Terminus families: code page 2 = ISO 8859-2 (Polish letters).
+# The u/v variants have 512 glyphs, which halves the console colours to 8.
+font_menu() {
+	while :; do
+		cur=$(font_current)
+		header "czcionka terminala"
+		say "Teraz: $cur"
+		say "       ($(font_label "$FONTDIR/$cur"))"
+		say ""
+		say "a) Terminus"
+		say "b) Terminus pogrubiony"
+		say "c) inne (VGA, DR-DOS...)"
+		say ""
+		ask "Wybierz [Enter=wstecz]: "
+		case $REPLY in
+		a) font_sizes "ter-2??n.psf.gz" ;;
+		b) font_sizes "ter-2??b.psf.gz" ;;
+		c) font_sizes "default8x*.psfu.gz drdos8x*.psfu.gz iso01-12x22.psfu.gz LatGrkCyr-12x22.psfu.gz Lat2-Terminus16.psfu.gz" ;;
+		"") return ;;
+		esac
+	done
+}
+
+font_sizes() {	# font_sizes "GLOB..."
+	header "rozmiar"
+	: > /tmp/chacha-fonts
+	for f in $(cd "$FONTDIR" && ls $1 2>/dev/null); do
+		set -- $(font_dims "$FONTDIR/$f")
+		[ -n "$1" ] && echo "$(( $1 * $2 )) $f" >> /tmp/chacha-fonts
+	done
+	sort -n /tmp/chacha-fonts | cut -d' ' -f2 > /tmp/chacha-fonts.s
+	n=$(wc -l < /tmp/chacha-fonts.s)
+	say "   znak   ekran   plik"
+	i=1
+	while read -r f; do
+		set -- $(font_label "$FONTDIR/$f")
+		printf '%s) %-6s %-7s %s\n' "$(letter_at $i)" "$1" "$2" "${f%%.psf*}"
+		i=$((i + 1))
+	done < /tmp/chacha-fonts.s
+	say ""
+	ask "Wybierz [Enter=wstecz]: "
+	k=$(index_of "$REPLY")
+	[ -n "$k" ] && [ "$k" -le "$n" ] || return
+	font_try "$(sed -n "${k}p" /tmp/chacha-fonts.s)"
+}
+
+# ---------------------------------------------------------------- main
+
+trap 'stty echo 2>/dev/null; rm -f /tmp/chacha-scan /tmp/chacha-nets /tmp/chacha-fonts /tmp/chacha-fonts.s' EXIT
+trap 'exit 1' INT TERM
+
+while :; do
+	header "menu"
+	say "WiFi: $(wifi_summary)"
+	say "Font: $(font_current | sed "s/\.psf.*//")"
+	say ""
+	say "w) WiFi: skanuj i polacz"
+	say "z) WiFi: zapisane sieci"
+	say "s) WiFi: status"
+	say "f) czcionka terminala"
+	say ""
+	ask "Wybierz [Enter=wyjscie]: "
+	case $REPLY in
+	w) wifi_scan ;;
+	z) wifi_saved ;;
+	s) wifi_status ;;
+	f) font_menu ;;
+	"") clear; exit 0 ;;
+	esac
+done

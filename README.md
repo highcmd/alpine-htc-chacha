@@ -238,7 +238,20 @@ skopiuj do `/etc/keymaps/` i `loadkeys /etc/keymaps/chacha.map`.
 (183 = SYM/Ctrl, 231 = Esc, 15 = Tab). `chacha-touchkeys -d …` pokazuje surowe
 współrzędne dotyku (próg paska klawiszy: `-y 700`).
 
-### WiFi
+### chacha-config
+
+`chacha-config` (konsola lub SSH) to menu do konfiguracji telefonu. Pozycje wybiera się literami, bo cyfry wymagają FN; Enter cofa.
+
+- `w`: skanowanie WiFi, wybór sieci, hasło i połączenie. Sieć jest zapisywana w
+  `wpa_supplicant.conf`, a potem odnawiana dzierżawa DHCP. `1` służy do sieci ukrytej.
+  Obsługiwane są sieci WPA/WPA2-PSK i otwarte.
+- `z`: lista zapisanych sieci z możliwością ich usuwania. `s`: status połączenia.
+- `f`: czcionka terminala. Do wyboru jest Terminus (zwykły lub pogrubiony, ISO 8859-2,
+  od 6x12 do 16x32) albo kilka klasycznych czcionek; przy każdej widać, ile mieści się
+  kolumn i wierszy. Wybrana czcionka od razu pojawia się na tty1. Jeśli nie potwierdzisz
+  jej `t` w ciągu 20 s, wraca poprzednia. Wybór trafia do `/etc/conf.d/consolefont`.
+
+### WiFi ręcznie
 
 ```sh
 wpa_passphrase "SSID" >> /etc/wpa_supplicant/wpa_supplicant.conf   # wpisz hasło

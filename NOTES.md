@@ -188,3 +188,12 @@ Decyzja użytkownika: czysty Alpine armhf v3.24 na SD, kernel kandydat 1, karta 
 
 2026-10-26: flashed out/boot-alpine.img (colour kernel, sha256 b5fe5782…19c1) to boot;
 read back from /dev/mtd2ro matches. Boots to sshd in ~50 s.
+
+2026-10-26: chacha-config (usr/local/bin): busybox-sh menu, letters instead of digits
+(digits need FN). WiFi through wpa_cli: scanned SSIDs set as P"..." (scan_results is
+printf-escaped), hidden ones as hex; psk quoted; select_network, then enable_network all +
+save_config; udhcpc (-b from ifup) gets SIGUSR1. Fonts: dimensions read from the PSF1/PSF2
+header; preview with setfont -C /dev/tty1, auto-revert after 20 s. Terminus offered from
+code page 2 (Polish); u/v have 512 glyphs, which would cut the colours to 8.
+Tested: scan (ch 12 visible), preview/revert/save, failed connect cleans up.
+Not tested: a successful connect (2.4 GHz network unavailable).
