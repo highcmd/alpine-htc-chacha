@@ -21,7 +21,7 @@ letters = {
     'j': ('minus', 'grave'), 'k': ('plus', 'asciicircum'),
     'l': ('equal', 'equal'), 'z': ('seven', 'seven'),
     'x': ('eight', 'eight'), 'c': ('nine', 'nine'),
-    'v': ('U+20AC', 'U+20AC'), 'b': ('apostrophe', 'apostrophe'),
+    'v': ('asciicircum', 'U+20AC'), 'b': ('apostrophe', 'apostrophe'),  # FN+v: ^, € moved to Shift+FN
     'n': ('quotedbl', 'quotedbl'), 'm': ('colon', 'colon'),
 }
 codes = dict(zip('qwertyuiop', range(16, 26)))

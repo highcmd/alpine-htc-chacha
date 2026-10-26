@@ -217,10 +217,10 @@ fastboot reboot
 
 | Klawisz | Działanie |
 |---|---|
-| FN + klawisz | znak z nadruku: cyfry 1–9, `( ) ! £ $ % & @ / _ - + = € ' " :` |
+| FN + klawisz | znak z nadruku: cyfry 1–9, `( ) ! £ $ % & @ / _ - + = ' " :`; FN + V = `^` (zamiast €) |
 | FN + SYM / `,` / `?` / `.` / Tab | `0` / `#` / `;` / `:` / `*` |
 | Shift+FN + Q A W S E D | `[ ] { } < >` |
-| Shift+FN + T G U J K | `\| \ ~ ` ^` |
+| Shift+FN + T G U J K V | `\| \ ~ ` ^ €` |
 | SYM | Ctrl |
 | zielona słuchawka | Esc |
 | czerwona słuchawka | Alt (Meta) |
