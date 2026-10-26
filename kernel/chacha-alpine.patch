@@ -12,7 +12,7 @@ index 460839e9..c6823021 100755
  	  This selects support for the CP15 thread register.
  	  It is defined to be available on some ARMv6 processors (including
 diff --git a/drivers/video/msm/msm_fb.c b/drivers/video/msm/msm_fb.c
-index f99eb242..2de32bd8 100755
+index f99eb242..c26e7879 100755
 --- a/drivers/video/msm/msm_fb.c
 +++ b/drivers/video/msm/msm_fb.c
 @@ -71,7 +71,7 @@ extern wait_queue_head_t panel_update_wait_queue;
@@ -24,6 +24,53 @@ index f99eb242..2de32bd8 100755
  		PR_DISP_INFO("msmfb: "fmt, ##args); \
  } while (0)
  #define BITS_PER_PIXEL(info) (info->fb->var.bits_per_pixel)
+@@ -1046,12 +1046,31 @@ static int msmfb_ioctl(struct fb_info *p, unsigned int cmd, unsigned long arg)
+ 	return ret;
+ }
+ 
++/* Console colours: fill the truecolor pseudo palette used by fbcon,
++ * with the same pixel layout as msmfb_set_par(). */
++static int msmfb_setcolreg(unsigned regno, unsigned red, unsigned green,
++			   unsigned blue, unsigned transp, struct fb_info *info)
++{
++	u32 *pal = info->pseudo_palette;
++
++	if (regno >= 16)
++		return -EINVAL;
++	if (info->var.bits_per_pixel == 16)
++		pal[regno] = ((red >> 11) << 11) | ((green >> 10) << 5) |
++			     (blue >> 11);
++	else
++		pal[regno] = 0xff000000 | ((blue >> 8) << 16) |
++			     ((green >> 8) << 8) | (red >> 8);
++	return 0;
++}
++
+ static struct fb_ops msmfb_ops = {
+ 	.owner = THIS_MODULE,
+ 	.fb_open = msmfb_open,
+ 	.fb_release = msmfb_release,
+ 	.fb_check_var = msmfb_check_var,
+ 	.fb_set_par = msmfb_set_par,
++	.fb_setcolreg = msmfb_setcolreg,
+ 	.fb_pan_display = msmfb_pan_display,
+ 	.fb_fillrect = msmfb_fillrect,
+ 	.fb_copyarea = msmfb_copyarea,
+@@ -1179,9 +1198,11 @@ static void setup_fb_info(struct msmfb_info *msmfb)
+ 	r = fb_alloc_cmap(&fb_info->cmap, 16, 0);
+ 	fb_info->pseudo_palette = PP;
+ 
+-	PP[0] = 0;
+-	for (r = 1; r < 16; r++)
+-		PP[r] = 0xffffffff;
++	/* default VGA console palette until fbcon sets its own */
++	fb_copy_cmap(fb_default_cmap(16), &fb_info->cmap);
++	for (r = 0; r < 16; r++)
++		msmfb_setcolreg(r, fb_info->cmap.red[r], fb_info->cmap.green[r],
++				fb_info->cmap.blue[r], 0, fb_info);
+ 
+ 	/* Jay add, 7/1/09' */
+ #if (defined(CONFIG_USB_FUNCTION_PROJECTOR) || defined(CONFIG_USB_ANDROID_PROJECTOR))
 diff --git a/kernel/timeconst.pl b/kernel/timeconst.pl
 index eb51d76e..04612394 100755
 --- a/kernel/timeconst.pl

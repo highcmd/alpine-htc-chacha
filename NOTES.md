@@ -178,3 +178,10 @@ Decyzja użytkownika: czysty Alpine armhf v3.24 na SD, kernel kandydat 1, karta 
 - Keymap generowany przy budowie rootfs (config/gen-keymap.py), nie trzymany w repo.
 - Nowa karta: partycja przez fdisk z initramfs (busybox), zapis obrazu przez RNDIS (write-sd.sh),
   powiększenie ext4 przy pierwszym starcie (/etc/local.d/resize-rootfs.start).
+
+## 2026-10-26 — kolory w konsoli
+- msm_fb (HTC) wypełniał pseudo palette na sztywno: PP[0]=czarny, PP[1..15]=biały, brak fb_setcolreg → konsola monochromatyczna.
+- Łatka: msmfb_setcolreg (układ pikseli jak w msmfb_set_par: 32 bpp R|G<<8|B<<16, 16 bpp RGB565) + domyślna paleta VGA w setup_fb_info.
+- Test RAM (fastboot boot): 16 kolorów OK (paleta VGA w zrzucie /dev/fb0). Tło tylko 8 kolorów (ograniczenie konsoli Linuksa).
+- Brak 256/truecolor: przybliżanie 38;5;n w konsoli dopiero od kernela 3.16.
+- Zrzut ekranu: `head -c 614400 /dev/fb0` (480x320x4, pan 0,0) → PIL frombytes RGBA. Przy wygaszonej konsoli fb jest czarny.
