@@ -1,0 +1,4 @@
+# Keyboard backlight: on | off (on/off only, no dimming)
+KEYBOARD="on"
+# Touch-key backlight under the screen: 0 (off) .. 255
+BUTTONS="0"

@@ -207,3 +207,10 @@ Command-line LDFLAGS replaces the Makefile's -lncursesw, so it is passed explici
 Runs on the phone (main menu checked in a tmux 80x26 pane).
 WiFi from the iPhone hotspot dropped (SCANNING) while wlan0 kept its lease and default
 route (metric 211), so apk hung; worked around with a metric-100 route via usb0.
+
+2026-10-26: backlights are microp LEDs in /sys/class/leds: keyboard-backlight (LED_GPO,
+on/off only), button-backlight (PWM 0..255), sharekey (Facebook key). The
+lcd-backlight-gate trigger only fires from panel early-suspend, which never happens here,
+and msm_fb has no fb_blank (EINVAL), so the backlights cannot follow console blanking
+without kernel work. New service chacha-backlight + /etc/conf.d/chacha-backlight
+(default: keyboard on, buttons off); chacha-config "p" menu.

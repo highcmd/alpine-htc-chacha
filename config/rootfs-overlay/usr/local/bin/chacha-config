@@ -1,5 +1,5 @@
 #!/bin/sh
-# chacha-config: WiFi and console font setup for the HTC ChaCha.
+# chacha-config: WiFi, console font and backlight setup for the HTC ChaCha.
 # Menus use letters (digits need FN on the ChaCha keyboard); Enter = back.
 # Lines are kept short so the menus still fit with a 16x32 font (30x10).
 
@@ -371,6 +371,54 @@ font_sizes() {	# font_sizes "GLOB..."
 	font_try "$(sed -n "${k}p" /tmp/chacha-fonts.s)"
 }
 
+# ---------------------------------------------------------------- backlight
+
+LEDS=/sys/class/leds
+BLCONF=/etc/conf.d/chacha-backlight
+
+bl_get() { sed -n "s/^$1=\"\{0,1\}\([^\"]*\)\"\{0,1\}/\1/p" "$BLCONF"; }
+bl_set() { sed -i "s/^$1=.*/$1=\"$2\"/" "$BLCONF"; }
+
+bl_buttons_label() {
+	case $1 in
+	0) echo "wylaczone" ;;
+	*) echo "$1/255" ;;
+	esac
+}
+
+# The keyboard LED is on/off only; the touch keys are PWM (0..255)
+backlight_menu() {
+	while :; do
+		kbd=$(bl_get KEYBOARD)
+		btn=$(bl_get BUTTONS)
+		header "podswietlenie"
+		say "Klawiatura: ${kbd:-on}"
+		say "Przyciski:  $(bl_buttons_label "${btn:-0}")"
+		say ""
+		say "k) klawiatura wl/wyl"
+		say "a) przyciski: wylaczone"
+		say "b) przyciski: slabe"
+		say "c) przyciski: srednie"
+		say "d) przyciski: pelne"
+		say ""
+		say "Zapisywane od razu, dziala"
+		say "tez po restarcie."
+		say ""
+		ask "Wybierz [Enter=wstecz]: "
+		case $REPLY in
+		k)
+			if [ "${kbd:-on}" = on ]; then kbd=off; v=0; else kbd=on; v=255; fi
+			echo $v > $LEDS/keyboard-backlight/brightness
+			bl_set KEYBOARD $kbd ;;
+		a|b|c|d)
+			case $REPLY in a) v=0 ;; b) v=32 ;; c) v=96 ;; d) v=255 ;; esac
+			echo $v > $LEDS/button-backlight/brightness
+			bl_set BUTTONS $v ;;
+		"") return ;;
+		esac
+	done
+}
+
 # ---------------------------------------------------------------- main
 
 trap 'stty echo 2>/dev/null; rm -f /tmp/chacha-scan /tmp/chacha-nets /tmp/chacha-fonts /tmp/chacha-fonts.s' EXIT
@@ -385,6 +433,7 @@ while :; do
 	say "z) WiFi: zapisane sieci"
 	say "s) WiFi: status"
 	say "f) czcionka terminala"
+	say "p) podswietlenie"
 	say ""
 	ask "Wybierz [Enter=wyjscie]: "
 	case $REPLY in
@@ -392,6 +441,7 @@ while :; do
 	z) wifi_saved ;;
 	s) wifi_status ;;
 	f) font_menu ;;
+	p) backlight_menu ;;
 	"") clear; exit 0 ;;
 	esac
 done
