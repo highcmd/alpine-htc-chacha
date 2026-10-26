@@ -1,0 +1,5 @@
+#!/bin/sh
+# CDDA reads data/ and writes save/ relative to the working directory; without
+# a UTF-8 locale (plain ssh sessions have none) it warns and draws ASCII boxes
+export LANG=${LANG:-C.UTF-8}
+cd /opt/cataclysm && exec ./cataclysm "$@"

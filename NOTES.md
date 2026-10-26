@@ -258,3 +258,17 @@ build-cdda.sh takes the version (default 0.A); sources in work/cdda/src-VERSION.
 builds with the same flags as 0.8 except src/game.cpp defines its own std::abs(float),
 which clashes with libstdc++ 15; the script deletes that line. On the phone /opt/cataclysm
 is now 0.A (menu shows "Version: 0.A"); the 0.8 save dirs moved to /root/cataclysm-0.8-saves.
+
+## Cataclysm 0.D installed (0.I still building)
+User: any version is fine as long as it works. Latest stable is 0.I-1 (0.I-branch, Sep 2026,
+111 MB data); built in parallel with 0.D (2019, 42 MB data, first with Android builds).
+build-cdda.sh changes: one bind mount per version (/src-VER) so builds can run together;
+modern flags TILES= SOUND= (0.D tests "ifdef TILES", so TILES=0 meant tiles), LOCALIZE=0,
+BACKTRACE=0, RELEASE=1 (-Os), WARNINGS=-w RELEASE_FLAGS= (drop -Werror);
+CXX='g++ -include musl-compat.h -fpermissive -Wno-template-body'. musl-compat.h adds
+strtoll_l/strtoull_l (0.I flatbuffers) and <cstdint> etc. (0.D relied on transitive includes);
+-Wno-template-body: GCC 14 checks uninstantiated template bodies (0.D src/optional.h).
+0.D on the phone: menu RSS 23 MB; "Play Now!" world load ~2.5 min, VmHWM 121 MB, idle CPU 0%,
+moving works, save and quit works (~900 KB). Needs LANG=C.UTF-8 (plain ssh has no LANG; it
+warns and waits for a key) -> wrapper /usr/local/bin/cataclysm now in the overlay.
+0.A removed from the phone; /opt/cataclysm is 0.D.

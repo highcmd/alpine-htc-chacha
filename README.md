@@ -299,17 +299,19 @@ Telefon ma trasę domyślną przez `172.16.42.2` z metryką 500 (WiFi ma pierwsz
 6. Brak RTC → initramfs ustawia zegar z pliku swclock, potem ntpd.
 7. Wyszukiwanie słowa w `/proc/cmdline`: HBOOT dodaje `board_chacha.debug_uart=…`.
 
-### Cataclysm: DDA 0.A
+### Cataclysm: DDA 0.D
 
-`sudo scripts/build-cdda.sh [WERSJA]` kompiluje grę (gałąź `WERSJA-branch`, domyślnie `0.A`,
-`0.8` też się buduje; ncurses) w chroocie Alpine armhf przez qemu (~30 min na 16 wątkach)
-i tworzy `out/cataclysm-WERSJA-armhf.tar.gz`.
-Instalacja na telefonie:
+`sudo scripts/build-cdda.sh [WERSJA]` kompiluje grę (gałąź `WERSJA-branch`, ncurses) w chroocie
+Alpine armhf przez qemu i tworzy `out/cataclysm-WERSJA-armhf.tar.gz`. Budują się 0.8, 0.A,
+0.D i 0.I (najnowsze stabilne wydanie, domyślne); `JOBS=N` zmienia liczbę zadań make.
+
+Na telefonie jest **0.D „Danny”**: menu startuje w kilka sekund, nowy świat wczytuje się ok.
+2,5 min, gra zajmuje ok. 120 MB RAM, ruch jest płynny, zapis działa.
 
 ```sh
 apk add ncurses-libs ncurses-terminfo-base libintl libstdc++
-ssh root@172.16.42.1 'tar -xzf - -C /opt' < out/cataclysm-0.A-armhf.tar.gz
-# /usr/local/bin/cataclysm: cd /opt/cataclysm && exec ./cataclysm "$@"
+ssh root@172.16.42.1 'tar -xzf - -C /opt' < out/cataclysm-0.D-armhf.tar.gz
+# /usr/local/bin/cataclysm (w overlayu): LANG=C.UTF-8, cd /opt/cataclysm, ./cataclysm
 ```
 
 Gra potrzebuje co najmniej 80x24, czyli czcionki 6x12 (`ter-112n` / `ter-212n`).
