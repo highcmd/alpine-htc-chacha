@@ -1,8 +1,9 @@
 #!/bin/sh
 # Build Cataclysm: Dark Days Ahead (ncurses) for the phone in an Alpine armhf
 # chroot (qemu-user). Run as root:  sudo scripts/build-cdda.sh [VERSION]
-# VERSION is the upstream branch without "-branch" (default 0.I, the latest stable;
-# 0.8, 0.A and 0.D also build).
+# VERSION is the upstream branch without "-branch" (default 0.D, the one on the
+# phone; 0.8 and 0.A also build; the latest, 0.I, compiled almost to the end but
+# was not finished or tried).
 # Output: out/cataclysm-VERSION-armhf.tar.gz (unpack on the phone into /opt).
 set -e
 . "$(dirname "$0")/env.sh"
@@ -11,7 +12,7 @@ set -e
 [ -e /proc/sys/fs/binfmt_misc/qemu-arm ] || die "qemu-arm binfmt not registered (apt install qemu-user-static)"
 
 CDDA_REPO=https://github.com/CleverRaven/Cataclysm-DDA.git
-CDDA_VER=${1:-0.I}
+CDDA_VER=${1:-0.D}
 CDDA_BRANCH=$CDDA_VER-branch
 CH=$WORK/cdda/chroot
 SRC=$WORK/cdda/src-$CDDA_VER
@@ -36,11 +37,11 @@ EOF
 # musl has no strtoll_l/strtoull_l (0.I's flatbuffers wants them); its integer
 # parsing does not depend on the locale anyway. Also forced into 0.D and later.
 cat > "$CH/usr/local/include/musl-compat.h" <<'EOF'
+#ifdef __cplusplus	/* 0.I also compiles zstd's C files with $(CXX) -x c */
 #include <stdlib.h>
 #include <locale.h>
 static inline long long strtoll_l(const char *s, char **e, int b, locale_t l) { (void)l; return strtoll(s, e, b); }
 static inline unsigned long long strtoull_l(const char *s, char **e, int b, locale_t l) { (void)l; return strtoull(s, e, b); }
-#ifdef __cplusplus
 /* older code relied on these arriving through other libstdc++ headers */
 #include <cstdint>
 #include <cstring>

@@ -302,8 +302,8 @@ Telefon ma trasę domyślną przez `172.16.42.2` z metryką 500 (WiFi ma pierwsz
 ### Cataclysm: DDA 0.D
 
 `sudo scripts/build-cdda.sh [WERSJA]` kompiluje grę (gałąź `WERSJA-branch`, ncurses) w chroocie
-Alpine armhf przez qemu i tworzy `out/cataclysm-WERSJA-armhf.tar.gz`. Budują się 0.8, 0.A,
-0.D i 0.I (najnowsze stabilne wydanie, domyślne); `JOBS=N` zmienia liczbę zadań make.
+Alpine armhf przez qemu i tworzy `out/cataclysm-WERSJA-armhf.tar.gz`. Budują się 0.8, 0.A
+i 0.D (domyślna); `JOBS=N` zmienia liczbę zadań make.
 
 Na telefonie jest **0.D „Danny”**: menu startuje w kilka sekund, nowy świat wczytuje się ok.
 2,5 min, gra zajmuje ok. 120 MB RAM, ruch jest płynny, zapis działa.

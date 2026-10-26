@@ -272,3 +272,6 @@ strtoll_l/strtoull_l (0.I flatbuffers) and <cstdint> etc. (0.D relied on transit
 moving works, save and quit works (~900 KB). Needs LANG=C.UTF-8 (plain ssh has no LANG; it
 warns and waits for a key) -> wrapper /usr/local/bin/cataclysm now in the overlay.
 0.A removed from the phone; /opt/cataclysm is 0.D.
+0.I build stopped at the user's request ("nie potrzebuje nowszych wersji") after ~330 of
+~400 objects; musl-compat.h is now C++-only because 0.I compiles zstd's C with $(CXX) -x c.
+build-cdda.sh default is 0.D. work/cdda/src-0.I (1.2 GB) left in place.
