@@ -376,8 +376,18 @@ font_sizes() {	# font_sizes "GLOB..."
 LEDS=/sys/class/leds
 BLCONF=/etc/conf.d/chacha-backlight
 
-bl_get() { sed -n "s/^$1=\"\{0,1\}\([^\"]*\)\"\{0,1\}/\1/p" "$BLCONF"; }
-bl_set() { sed -i "s/^$1=.*/$1=\"$2\"/" "$BLCONF"; }
+IDLECONF=/etc/conf.d/chacha-idle
+
+# bl_get VAR [FILE], bl_set VAR VALUE [FILE]
+bl_get() { sed -n "s/^$1=\"\{0,1\}\([^\"]*\)\"\{0,1\}/\1/p" "${2:-$BLCONF}"; }
+bl_set() { sed -i "s/^$1=.*/$1=\"$2\"/" "${3:-$BLCONF}"; }
+
+idle_label() {
+	case $1 in
+	0) echo "nigdy" ;;
+	*) echo "$(($1 / 60)) min" ;;
+	esac
+}
 
 bl_buttons_label() {
 	case $1 in
@@ -391,15 +401,18 @@ backlight_menu() {
 	while :; do
 		kbd=$(bl_get KEYBOARD)
 		btn=$(bl_get BUTTONS)
+		idle=$(bl_get IDLE_TIMEOUT "$IDLECONF")
 		header "podswietlenie"
 		say "Klawiatura: ${kbd:-on}"
 		say "Przyciski:  $(bl_buttons_label "${btn:-0}")"
+		say "Wygaszanie: $(idle_label "${idle:-300}")"
 		say ""
 		say "k) klawiatura wl/wyl"
 		say "a) przyciski: wylaczone"
 		say "b) przyciski: slabe"
 		say "c) przyciski: srednie"
 		say "d) przyciski: pelne"
+		say "t) wygaszanie po bezczynnosci"
 		say ""
 		say "Zapisywane od razu, dziala"
 		say "tez po restarcie."
@@ -414,9 +427,29 @@ backlight_menu() {
 			case $REPLY in a) v=0 ;; b) v=32 ;; c) v=96 ;; d) v=255 ;; esac
 			echo $v > $LEDS/button-backlight/brightness
 			bl_set BUTTONS $v ;;
+		t) idle_menu ;;
 		"") return ;;
 		esac
 	done
+}
+
+# chacha-idle switches all backlights off; any key or touch wakes the screen
+idle_menu() {
+	header "wygaszanie"
+	say "Wszystkie podswietlenia gasna"
+	say "po czasie bez klawisza/dotyku."
+	say "Klawisz budzacy nie jest wpisywany."
+	say ""
+	say "a) 1 min   b) 2 min   c) 5 min"
+	say "d) 10 min  e) 30 min  f) nigdy"
+	say ""
+	ask "Wybierz [Enter=wstecz]: "
+	case $REPLY in
+	a) v=60 ;; b) v=120 ;; c) v=300 ;; d) v=600 ;; e) v=1800 ;; f) v=0 ;;
+	*) return ;;
+	esac
+	bl_set IDLE_TIMEOUT $v "$IDLECONF"
+	rc-service chacha-idle restart >/dev/null 2>&1
 }
 
 # ---------------------------------------------------------------- main

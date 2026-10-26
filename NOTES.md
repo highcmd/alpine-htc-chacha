@@ -214,3 +214,8 @@ lcd-backlight-gate trigger only fires from panel early-suspend, which never happ
 and msm_fb has no fb_blank (EINVAL), so the backlights cannot follow console blanking
 without kernel work. New service chacha-backlight + /etc/conf.d/chacha-backlight
 (default: keyboard on, buttons off); chacha-config "p" menu.
+chacha-idle (tools-src): polls chacha-keypad + cy8c-touchscreen only (light/proximity/
+compass report continuously); after the timeout saves and zeroes lcd/keyboard/button
+backlights and EVIOCGRABs the inputs so the waking key is not typed; SIGTERM restores.
+Console blanking disabled with ESC[9;0] in the service. Timed blank + SIGTERM restore
+tested over ssh; waking with a real key press needs a person at the phone.

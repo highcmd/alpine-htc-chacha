@@ -253,6 +253,10 @@ współrzędne dotyku (próg paska klawiszy: `-y 700`).
 - `p`: podświetlenie klawiatury (tylko wł./wył.) i przycisków dotykowych (wyłączone, słabe,
   średnie, pełne). Ustawienie jest zapisywane w `/etc/conf.d/chacha-backlight`, a usługa
   `chacha-backlight` przywraca je przy starcie.
+  `t` ustawia wygaszanie: `chacha-idle` po zadanym czasie bez klawisza i dotyku gasi
+  podświetlenie ekranu, klawiatury i przycisków (domyślnie 5 min, `/etc/conf.d/chacha-idle`).
+  Klawisz, który budzi ekran, nie trafia do konsoli. Wygaszanie wbudowane w konsolę jest
+  wyłączone, bo przy msm_fb czyściło tylko obraz, a podświetlenie zostawiało włączone.
 
 ### WiFi ręcznie
 

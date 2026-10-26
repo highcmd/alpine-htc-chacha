@@ -41,7 +41,7 @@ mount -t proc proc "$ROOTFS/proc"
 trap 'umount "$ROOTFS/proc" "$ROOTFS/dev" 2>/dev/null' EXIT
 chroot "$ROOTFS" /bin/sh -c '
 	set -e
-	for t in wlpriv chacha-touchkeys reboot-bootloader; do
+	for t in wlpriv chacha-touchkeys chacha-idle reboot-bootloader; do
 		gcc -O2 -Wall -o /usr/local/bin/$t /root/src/$t.c
 	done
 	depmod -a '"$KVER"'

@@ -1,0 +1,2 @@
+# Seconds without a key press or touch before the backlights go off (0 = never)
+IDLE_TIMEOUT="300"
