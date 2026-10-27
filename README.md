@@ -1,326 +1,247 @@
-# Alpine Linux na HTC ChaCha (A810e) jako terminal SSH
+# Alpine Linux on the HTC ChaCha (A810e)
 
-Minimalny Alpine Linux 3.24 (armhf) na telefonie HTC ChaCha: konsola na
-framebufferze (80×26 znaków), sprzętowa klawiatura QWERTY z własnym keymapem,
-WiFi (bcm4329, wext), `openssh-client`, `tmux`, autologin. Bez GUI, dotyku
-ekranu, audio i telefonii. Zamiast postmarketOS (który w 2026 porzucił armhf)
-używany jest czysty Alpine z własnym kernelem i initramfs.
+Turns an HTC ChaCha (the 2011 "Facebook phone" with a QWERTY keyboard) into a
+small Linux terminal: plain Alpine Linux 3.24 (armhf) on the SD card, booted by
+a patched HTC kernel from the phone's boot partition. Framebuffer console with
+80×26 characters, the hardware keyboard, WiFi, SSH, tmux, vim. No GUI.
 
-Pełny dziennik prac, decyzji i ślepych uliczek: [NOTES.md](NOTES.md).
-Wyniki rekonesansu telefonu: [recon/SUMMARY.md](recon/SUMMARY.md).
+postmarketOS dropped armhf in June 2026, so this is plain Alpine with its own
+kernel build and initramfs.
 
-## Co działa
+![fastfetch on the ChaCha](fastfetch-chacha-color.png)
+
+## What works
 
 | | |
 |---|---|
-| Kernel | 2.6.39.4-chacha-alpine (faktycznie baza HTC 2.6.35), gcc 4.7 z AOSP |
-| Start | z partycji boot (NAND) → initramfs → `switch_root` na kartę SD (ext4), ~60 s |
-| Ekran | fbcon 480×320, Terminus 6×12 → 80×26 znaków |
-| Klawiatura | keymap `chacha.map` (FN = symbole, SYM = Ctrl, zielona słuchawka = Esc) |
-| Klawisze dotykowe | Home/Menu/Back/Search pod ekranem → Ctrl+B / Tab / Esc / Ctrl+R |
-| WiFi | bcm4329 2.4 GHz, `wpa_supplicant -D wext`, kod kraju PL (kanały 1–13) |
-| USB | RNDIS, telefon `172.16.42.1`, laptop `172.16.42.2`, SSH (klucz) + NAT |
-| Brak | 5 GHz (brak anteny), dotyk ekranu, audio, telefonia, RTC (zegar przez ntpd/swclock) |
+| Kernel | 2.6.39.4-chacha-alpine (really HTC's 2.6.35 with a bumped version), gcc 4.7 from AOSP |
+| Boot | boot partition (NAND) → initramfs → `switch_root` to the SD card (ext4), about 60 s |
+| Screen | fbcon 480×320, 16 colours, Terminus fonts from 6×12 (80×26) to 16×32; brightness |
+| Keyboard | own keymap (FN = printed symbols, SYM = Ctrl, green call key = Esc), held-key repeat |
+| Touch keys | Home / Menu / Back / Search under the screen → Ctrl+B / Tab / Esc / Ctrl+R |
+| WiFi | BCM4329, 2.4 GHz, WPA/WPA2-PSK and open networks, scan/connect menu |
+| USB | RNDIS network: phone `172.16.42.1`, computer `172.16.42.2`, SSH by key, NAT for internet |
+| Power | battery voltage, screen/keyboard backlight off when idle, power key: screen off / hold 3 s to power off |
+| Other | vibration motor; Cataclysm: DDA 0.D builds and runs |
+| Not working | touchscreen input (except the four keys), audio, telephony, GPS, camera, 5 GHz, RTC (clock comes from NTP) |
 
-## Ostrzeżenia
+## Before you start
 
-- Wgranie obrazu na partycję boot zastępuje kernel Androida; CyanogenMod przestaje
-  startować (do czasu przywrócenia kopii `boot.img`). System Androida na NAND zostaje.
-- Wymagany odblokowany bootloader (HTCdev unlock, `*** UNLOCKED ***`). Testowane
-  na `CHACHA PVT SHIP S-ON RL`, HBOOT 1.10.0000; S-ON wystarcza.
-- Karta SD (partycja 1) jest w całości nadpisywana.
-- Firmware WiFi (Broadcom) nie jest w repozytorium — kopiuje się go z własnego telefonu.
+- **Unlocked bootloader** (HTCdev unlock): the HBOOT screen must show `*** UNLOCKED ***`.
+  S-ON is fine. Tested on `CHACHA PVT SHIP S-ON RL`, HBOOT 1.10.0000.
+- **Rooted Android** (e.g. CyanogenMod) with busybox and USB debugging, for the backup.
+  The WiFi firmware is copied from your phone because it may not be redistributed.
+- **A microSD card** of 1 GB or more. It is erased.
+- **A Linux computer**; tested on Debian 13 (x86_64).
+- Flashing replaces Android's kernel on the boot partition, so Android stops starting
+  until you put the backup back (`restore`). Android's system and data partitions are not
+  touched.
+- This was developed and tested on one phone. The guided script below runs the same
+  commands that were used during development, but it has not been run from start to end on
+  another phone. Read what each step does before you confirm it.
 
-## Struktura repozytorium
-
-```
-README.md                 ta instrukcja
-NOTES.md                  dziennik prac
-recon/                    wyniki rekonesansu (bez danych identyfikujących)
-kernel/                   łatka i .config dla kernela Marvellousteam/android_kernel_htc_msm7227@kk
-initramfs/                /init i lista plików initramfs
-config/gen-keymap.py      generator keymapu konsoli (→ /etc/keymaps/chacha.map)
-config/rootfs-overlay/    pliki nakładane na rootfs (usługi OpenRC, inittab, sieć, …)
-config/host-usb-nat.sh    NAT na laptopie: internet dla telefonu przez USB
-tools-src/                wlpriv, chacha-touchkeys, reboot-bootloader (C)
-scripts/                  fetch / build-kernel / build-bootimg / build-rootfs / write-sd
-```
-
-Katalogi `work/`, `out/`, `backup/` i surowe zrzuty z telefonu są w `.gitignore`.
-
----
-
-## Krok 0. Host
-
-Debian/Ubuntu (testowane na Debianie 13, x86_64):
+Host packages (Debian/Ubuntu):
 
 ```sh
 sudo apt install adb fastboot mkbootimg git curl gcc make perl python3 \
     e2fsprogs qemu-user-static binfmt-support netcat-openbsd
 ```
 
-`qemu-user-static` jest potrzebny do kompilacji narzędzi w chroocie armhf
-(`/proc/sys/fs/binfmt_misc/qemu-arm` musi istnieć).
+`qemu-user-static` runs ARM binaries during the build (the helper tools are compiled in an
+armhf chroot); `/proc/sys/fs/binfmt_misc/qemu-arm` must exist.
 
-## Krok 1. Rekonesans i firmware (telefon z CM, root, adb)
+You also need an SSH key (`~/.ssh/id_ed25519.pub`, or set `AUTHORIZED_KEYS=file`): it is
+the only way to log in over the network.
 
-Stary `adbd` nie ma `exec-out`, a `adb shell` zamienia LF→CRLF, więc pliki
-binarne przenosi się przez base64. `su -c` wymaga cytowania całej komendy.
+## Installation
 
-```sh
-adb devices
-mkdir -p recon/firmware
-pull() { adb shell "su -c 'cat $1 | busybox base64'" | tr -d '\r' | base64 -d > "$2"; }
-pull /system/etc/firmware/fw_bcm4329.bin       recon/firmware/fw_bcm4329.bin
-pull /system/etc/firmware/fw_bcm4329_apsta.bin recon/firmware/fw_bcm4329_apsta.bin
-adb shell "su -c 'busybox sha256sum /system/etc/firmware/fw_bcm4329*.bin'"
-sha256sum recon/firmware/fw_bcm4329*.bin       # muszą się zgadzać
-```
-
-NVRAM WiFi to `/proc/calibration` (dane z HBOOT, z adresem MAC) — kernel
-udostępnia go także pod Alpine, kopiować nie trzeba.
-
-## Krok 2. Kopia partycji boot i recovery (tylko odczyt)
+`scripts/chacha-install.sh` walks through the installation one step at a time. Every step
+that writes to the phone asks you to type a confirmation word, and `boot` and `flash` refuse
+to run without a verified backup.
 
 ```sh
-mkdir -p backup
-dump() { adb shell "su -c 'cat /dev/mtd/$1 | busybox base64'" | tr -d '\r' | base64 -d > "backup/$2"; }
-dump mtd2ro boot.img        # 3407872 B
-dump mtd1ro recovery.img    # 5242880 B
-adb shell "su -c 'cat /dev/mtd/mtd2ro | busybox sha256sum; cat /dev/mtd/mtd1ro | busybox sha256sum'"
-sha256sum backup/boot.img backup/recovery.img   # muszą się zgadzać
+git clone https://github.com/highcmd/alpine-htc-chacha.git
+cd alpine-htc-chacha
+
+scripts/chacha-install.sh check      # host tools; phone on Android with adb and root
+scripts/chacha-install.sh backup     # WiFi firmware + boot/recovery partitions, verified
+scripts/chacha-install.sh build      # kernel, boot image, rootfs (asks for sudo)
+scripts/chacha-install.sh boot       # boot Alpine from RAM, nothing is written
+scripts/chacha-install.sh sd-format  # new SD card: one partition (erases the card)
+scripts/chacha-install.sh sd-write   # rootfs onto the card (erases the card)
+scripts/chacha-install.sh boot       # again: now Alpine starts from the card
+scripts/chacha-install.sh flash      # make it permanent: boot image onto the boot partition
 ```
 
-Bez zgodnych sum nie przechodź dalej.
+To go back to Android: `scripts/chacha-install.sh restore`.
 
-## Krok 3. Bootloader
+### The USB network on the computer
+
+The phone appears as a USB network interface with a fixed MAC address
+(`02:c4:a0:00:00:01`). With NetworkManager, create a profile once, otherwise it removes a
+manually set address:
 
 ```sh
-adb reboot bootloader       # Vol Down + Power bywa zawodne
-fastboot getvar all         # security: on, version-bootloader: 1.10.0000
-fastboot reboot
+sudo nmcli con add type ethernet con-name chacha-usb ifname '*' \
+    802-3-ethernet.mac-address 02:C4:A0:00:00:01 \
+    ipv4.method manual ipv4.addresses 172.16.42.2/24 ipv4.never-default yes \
+    ipv6.method disabled
+ping 172.16.42.1
 ```
 
-Ekran HBOOT musi pokazywać `*** UNLOCKED ***`.
+Without NetworkManager: `sudo ip addr add 172.16.42.2/24 dev enx02c4a0000001`.
 
-## Krok 4. Kernel i obraz boot
+Internet for the phone over USB (after each reboot of the computer):
+`sudo config/host-usb-nat.sh`. The phone's USB route has metric 500, so WiFi wins when
+it is connected.
 
-```sh
-scripts/fetch.sh            # toolchain arm-eabi-4.7, źródła kernela, busybox-static, apk.static
-scripts/build-kernel.sh     # → out/zImage, out/bcm4329.ko, out/gen_init_cpio
-scripts/build-bootimg.sh    # → out/boot-alpine.img (≤ 3407872 B)
-```
+### What the steps do
 
-Łatka `kernel/chacha-alpine.patch`:
-- `HAS_TLS_REG` dla ARMv6K — musl z Alpine (v6KZ) czyta TLS z rejestru TPIDRURO;
-  bez tego każdy program z Alpine kończy się segfaultem (ARM1136 r1p5 ma ten rejestr),
-- wyciszenie `msmfb: pan_update` w dmesg,
-- `timeconst.pl` dla nowego Perla.
+1. **backup** copies `/system/etc/firmware/fw_bcm4329*.bin` to `recon/firmware/` and the
+   boot (`mtd2`, 3407872 B) and recovery (`mtd1`, 5242880 B) partitions to `backup/`
+   through their read-only device nodes. The old adbd has no `exec-out` and turns LF into
+   CRLF, so the data goes through `busybox base64`. Each file is checked against a
+   SHA-256 computed on the phone; the sums go to `backup/SHA256SUMS`. Both directories
+   are in `.gitignore`.
+2. **build** runs `scripts/fetch.sh` (AOSP arm-eabi-4.7 toolchain, kernel source,
+   Alpine busybox-static, apk.static), `scripts/build-kernel.sh` (→ `out/zImage`,
+   `out/bcm4329.ko`), `scripts/build-bootimg.sh` (→ `out/boot-alpine.img`) and
+   `scripts/build-rootfs.sh` (→ `out/rootfs.ext4`, 512 MB, grown to the whole partition on
+   first boot).
+3. **boot** reboots into the bootloader and runs `fastboot boot`, which only loads the image
+   into RAM. With no rootfs on the card, the initramfs stays in a rescue shell:
+   `nc 172.16.42.1 23`.
+4. **sd-format** / **sd-write** partition the card and stream the gzipped image over the USB
+   network into `dd` on the phone, then compare SHA-256 of the card with the image. (Writing
+   through Android's USB mass storage froze the phone, hence the network.)
+5. **flash** runs `fastboot flash boot out/boot-alpine.img`. Check the written image with
+   `ssh root@172.16.42.1 "head -c $(stat -c %s out/boot-alpine.img) /dev/mtd2ro | sha256sum"`
+   against `out/boot-alpine.img.sha256`.
 
-Ważne opcje w `kernel/chacha-alpine.config`: **`DEVTMPFS` wyłączone** (zawiesza
-ten kernel na starcie), VT + `FRAMEBUFFER_CONSOLE`, `ANDROID_PARANOID_NETWORK`
-wyłączone. Parametry obrazu (base `0x12c00000`, page 2048, cmdline z
-`console=null`) są w `scripts/env.sh`.
+## Using it
 
-## Krok 5. Rootfs
+The console logs in as root automatically on the phone. Over USB: `ssh root@172.16.42.1`.
 
-```sh
-sudo scripts/build-rootfs.sh   # → out/rootfs.ext4 (512 MB) i out/rootfs.ext4.gz
-```
+### Keyboard
 
-Instaluje pakiety Alpine armhf, nakłada `config/rootfs-overlay`, generuje keymap,
-kompiluje narzędzia z `tools-src/` w chroocie (qemu), kopiuje moduł i firmware,
-konfiguruje usługi. Do `/root/.ssh/authorized_keys` trafia
-`~/.ssh/id_ed25519.pub` (zmienna `AUTHORIZED_KEYS`).
-
-## Krok 6. Uruchomienie z RAM i zapis karty SD
-
-Na tym etapie nic nie jest flashowane — `fastboot boot` ładuje obraz tylko do RAM.
-
-1. Włóż kartę microSD (≥ 1 GB). Uruchom obraz:
-
-   ```sh
-   adb reboot bootloader
-   fastboot boot out/boot-alpine.img
-   ```
-
-   Bez rootfs na karcie initramfs zostaje w trybie diagnostycznym: RNDIS
-   `172.16.42.1` i shell `nc 172.16.42.1 23` (bez telnetd — busybox z Alpine go nie ma).
-
-2. Adres na laptopie. Profil NetworkManagera dla stałego MAC telefonu (raz):
-
-   ```sh
-   sudo nmcli con add type ethernet con-name chacha-usb ifname '*' \
-       802-3-ethernet.mac-address 02:C4:A0:00:00:01 \
-       ipv4.method manual ipv4.addresses 172.16.42.2/24 ipv4.never-default yes \
-       ipv6.method disabled
-   ping 172.16.42.1
-   ```
-
-   Bez tego profilu NetworkManager zdejmuje ręcznie nadany adres z `enx…`.
-
-3. Partycja na karcie (tylko nowa karta; **kasuje kartę**):
-
-   ```sh
-   echo 'printf "o\nn\np\n1\n2048\n\nw\n" | fdisk /dev/mmcblk0; mdev -s; ls -l /dev/mmcblk0p1' | nc -q 5 172.16.42.1 23
-   ```
-
-4. Zapis obrazu przez sieć USB z weryfikacją SHA256:
-
-   ```sh
-   scripts/write-sd.sh
-   ```
-
-   (Zapis przez USB Mass Storage z CM zamrażał telefon — dlatego przez RNDIS.)
-
-5. Restart i start Alpine z karty (wciąż z RAM):
-
-   ```sh
-   echo 'reboot -f' | nc -q 2 172.16.42.1 23
-   adb wait-for-device; adb reboot bootloader
-   fastboot boot out/boot-alpine.img
-   ssh root@172.16.42.1        # po ~60 s
-   ```
-
-   Przy pierwszym starcie `/etc/local.d/resize-rootfs.start` powiększa ext4 na całą partycję.
-
-## Krok 7. Wgranie na partycję boot
-
-Dopiero gdy krok 6 działa:
-
-```sh
-ssh root@172.16.42.1 reboot-bootloader      # z Alpine prosto do fastboot
-fastboot flash boot out/boot-alpine.img
-fastboot reboot
-```
-
-Weryfikacja zapisu (na telefonie; `dd` na mtd daje EINVAL, stąd `cat`):
-
-```sh
-ssh root@172.16.42.1 "cat /dev/mtd2ro | head -c $(stat -c %s out/boot-alpine.img) | sha256sum"
-cat out/boot-alpine.img.sha256
-```
-
-Powrót do CyanogenModa:
-
-```sh
-ssh root@172.16.42.1 reboot-bootloader
-fastboot flash boot backup/boot.img
-fastboot reboot
-```
-
----
-
-## Użytkowanie
-
-### Klawiatura
-
-| Klawisz | Działanie |
+| Key | Gives |
 |---|---|
-| FN + klawisz | znak z nadruku: cyfry 1–9, `( ) ! $ % & @ / _ - + = ' " :`; FN + V = `^` (zamiast €), FN + Y = `<` (zamiast £) |
+| FN + key | the printed symbol: digits 1–9, `( ) ! $ % & @ / _ - + = ' " :` |
+| FN + V / FN + Y | `^` / `<` |
 | Shift+FN + Y | `>` |
 | FN + SYM / `,` / `?` / `.` / Tab | `0` / `#` / `;` / `:` / `*` |
 | Shift+FN + Q A W S E D | `[ ] { } < >` |
 | Shift+FN + T G U J K V | `\| \ ~ ` ^ €` |
 | SYM | Ctrl |
-| zielona słuchawka | Esc |
-| czerwona słuchawka | Alt (Meta) |
-| Facebook | `\|` |
-| FN + strzałki | PgUp / PgDn / Home / End |
-| Shift + ↑/↓, Vol± | przewijanie konsoli |
+| green call key | Esc |
+| red call key | Alt (Meta) |
+| Facebook key | `\|` |
+| FN + arrows | PgUp / PgDn / Home / End |
+| Shift + ↑/↓, Vol± | console scrollback |
 | FN + DEL | Delete |
+| Power | short press: screen off/on; hold 3 s: power off |
+| Power + Vol Up + Vol Down | reset |
 
-Zmiany: `config/gen-keymap.py` → `python3 config/gen-keymap.py > chacha.map`,
-skopiuj do `/etc/keymaps/` i `loadkeys /etc/keymaps/chacha.map`.
+The keymap is generated by `config/gen-keymap.py`
+(`python3 config/gen-keymap.py > /etc/keymaps/chacha.map; loadkeys /etc/keymaps/chacha.map`).
+Ctrl+S / Ctrl+Q flow control is off on the console, so SYM+S does not freeze it.
 
-### Klawisze dotykowe
-
-`/etc/conf.d/chacha-touchkeys` — kody klawiszy Linuksa, `+` łączy w kombinację
-(183 = SYM/Ctrl, 231 = Esc, 15 = Tab). `chacha-touchkeys -d …` pokazuje surowe
-współrzędne dotyku (próg paska klawiszy: `-y 700`).
+The touch keys under the screen are set in `/etc/conf.d/chacha-touchkeys` (Linux key codes,
+`+` joins a combination: 183 = SYM/Ctrl, 231 = Esc, 15 = Tab).
 
 ### chacha-config
 
-`chacha-config` (konsola lub SSH) to menu do konfiguracji telefonu, z interfejsem po angielsku. Pozycje wybiera się literami, bo cyfry wymagają FN; Enter cofa.
+`chacha-config` is a menu for the phone's settings, on the console or over SSH. Items are
+chosen with letters (digits need FN); Enter goes back.
 
-- `w`: skanowanie WiFi, wybór sieci, hasło i połączenie. Sieć jest zapisywana w
-  `wpa_supplicant.conf`, a potem odnawiana dzierżawa DHCP. `1` służy do sieci ukrytej.
-  Obsługiwane są sieci WPA/WPA2-PSK i otwarte.
-- `z`: lista zapisanych sieci z możliwością ich usuwania. `s`: status połączenia.
-- `f`: czcionka terminala. Do wyboru jest Terminus (zwykły lub pogrubiony, ISO 8859-2,
-  od 6x12 do 16x32) albo kilka klasycznych czcionek; przy każdej widać, ile mieści się
-  kolumn i wierszy. Wybrana czcionka od razu pojawia się na tty1. Jeśli nie potwierdzisz
-  jej `y` w ciągu 20 s, wraca poprzednia. Wybór trafia do `/etc/conf.d/consolefont`.
-- `p`: jasność ekranu (`e`: 10/25/50/75/100%; nową jasność trzeba potwierdzić `y` w ciągu 15 s,
-  inaczej wraca poprzednia, na wypadek zbyt ciemnego ekranu), podświetlenie klawiatury (tylko wł./wył.) i przycisków dotykowych (wyłączone, słabe,
-  średnie, pełne). Ustawienie jest zapisywane w `/etc/conf.d/chacha-backlight`, a usługa
-  `chacha-backlight` przywraca je przy starcie.
-  `t` ustawia wygaszanie: `chacha-idle` po zadanym czasie bez klawisza i dotyku gasi
-  podświetlenie ekranu, klawiatury i przycisków (domyślnie 5 min, `/etc/conf.d/chacha-idle`).
-  Klawisz, który budzi ekran, nie trafia do konsoli. Wygaszanie wbudowane w konsolę jest
-  wyłączone, bo przy msm_fb czyściło tylko obraz, a podświetlenie zostawiało włączone.
-- `r`: autopowtarzanie przytrzymanego klawisza. Klawiatura ChaChy sama go nie ma (brak EV_REP),
-  więc robi je `chacha-idle`: po opóźnieniu (250/400/600 ms albo wyłączone) wysyła powtórzenia
-  z wybraną szybkością (5/10/15/20 na sekundę). Shift, FN, SYM, Alt i power się nie powtarzają.
-  Zapis w `/etc/conf.d/chacha-idle` (`KEY_REPEAT_DELAY`, `KEY_REPEAT_PERIOD`), domyślnie 400 ms, 10/s.
-- `v`: test wibracji (100 ms, 500 ms, 1,5 s, trzy impulsy). Silnik to
-  `/sys/class/timed_output/vibrator/enable`: `echo 500 >` wibruje 500 ms, `echo 0 >` przerywa.
-- `b`: bateria. Napięcie (`batt_vol`), status, ładowarka, prąd, temperatura; odświeża się
-  co 5 s. Napięcie widać też w menu głównym. Procent z kernela liczony jest z krzywej
-  fabrycznej baterii 1250 mAh, więc przy innym ogniwie miarodajne jest napięcie
-  (orientacyjnie 4,2 V = pełna, ~3,4 V = pusta).
-- Klawisz power: krótkie naciśnięcie gasi albo zapala ekran, przytrzymanie przez 3 s
-  wyłącza telefon (`poweroff`). Power + głośność góra + głośność dół to sprzętowy reset
-  HTC (`keyreset` w kernelu).
+![chacha-config](chacha-config.png)
 
-### WiFi ręcznie
+- `w` scan for WiFi networks, choose one, enter the password, connect; `1` is a hidden
+  network. `z` saved networks (remove). `s` connection status.
+- `f` console font: Terminus regular or bold (ISO 8859-2) from 6×12 to 16×32, plus a few
+  others, each shown with the columns × rows it gives. The font is applied at once and
+  reverts after 20 s unless confirmed with `y`.
+- `p` screen brightness (reverts after 15 s unless confirmed), keyboard backlight, touch-key
+  backlight, and the idle time after which all backlights go off. The key or touch that
+  wakes the screen is not typed.
+- `r` held-key repeat: delay and rate (the keypad driver has none of its own).
+- `b` battery: voltage, status, charger, current, temperature. The kernel's percentage
+  follows the original 1250 mAh cell's curve, so the voltage is the better guide with
+  another battery (about 4.2 V full, 3.4 V empty).
+- `v` vibration test. The motor is `/sys/class/timed_output/vibrator/enable`
+  (`echo 500 >` vibrates for 500 ms).
+
+Settings are kept in `/etc/conf.d/` (`chacha-backlight`, `chacha-idle`, `consolefont`) and
+in `/etc/wpa_supplicant/wpa_supplicant.conf`.
+
+### WiFi by hand
 
 ```sh
-wpa_passphrase "SSID" >> /etc/wpa_supplicant/wpa_supplicant.conf   # wpisz hasło
+wpa_passphrase "SSID" >> /etc/wpa_supplicant/wpa_supplicant.conf   # type the password
 rc-service wpa_supplicant-chacha restart
 wpa_cli -i wlan0 status
 ```
 
-Tylko 2.4 GHz. Kraj: `/etc/conf.d/wifi-country` (`wlpriv wlan0 COUNTRY PL`).
-Sterownik zaczyna skanować dopiero po starcie `wpa_supplicant`; nie używaj
-`iwpriv wlan0 STOP/START` (psuje SDIO do przeładowania modułu).
+2.4 GHz only. The regulatory country is set in `/etc/conf.d/wifi-country` (default `PL`,
+channels 1–13): set your own country code there.
 
-### Internet przez USB
+### Rescue
 
-Na laptopie (po każdym restarcie laptopa): `sudo config/host-usb-nat.sh`.
-Telefon ma trasę domyślną przez `172.16.42.2` z metryką 500 (WiFi ma pierwszeństwo).
+- Shell without SSH: `nc 172.16.42.1 23` (started before OpenRC).
+- To the bootloader from Alpine: `reboot-bootloader`.
+- Hung phone: Power + Vol Up + Vol Down resets it while the kernel still runs; a hung
+  kernel needs the battery taken out (Power alone does not reset).
 
-### Ratunek
+## Cataclysm: Dark Days Ahead
 
-- Shell bez SSH: `nc 172.16.42.1 23` (startuje przed OpenRC).
-- Do fastboot z Alpine: `reboot-bootloader`.
-- Zawieszony kernel: odłączenie zasilania (Power nie resetuje).
-
-## Najważniejsze pułapki (szczegóły w NOTES.md)
-
-1. postmarketOS usunął armhf (VI 2026) → czysty Alpine.
-2. Źródła „2.6.39.4” to w rzeczywistości 2.6.35 z podbitym numerem wersji.
-3. musl/TLS → `HAS_TLS_REG`; `DEVTMPFS` → zawieszenie; printk na fbcon → zakleszczenie (`console=null`).
-4. Brak `getrandom()` → `haveged` przed OpenRC, inaczej sshd i start wiszą minutami.
-5. OpenRC na 2.6.35: `checkpath` przez symlink `/var/run` i ambient capabilities nie działają
-   → własne usługi `wpa_supplicant-chacha` i `ntpd-legacy`; `rc_cgroup_mode="legacy"`.
-6. Brak RTC → initramfs ustawia zegar z pliku swclock, potem ntpd.
-7. Wyszukiwanie słowa w `/proc/cmdline`: HBOOT dodaje `board_chacha.debug_uart=…`.
-
-### Cataclysm: DDA 0.D
-
-`sudo scripts/build-cdda.sh [WERSJA]` kompiluje grę (gałąź `WERSJA-branch`, ncurses) w chroocie
-Alpine armhf przez qemu i tworzy `out/cataclysm-WERSJA-armhf.tar.gz`. Budują się 0.8, 0.A
-i 0.D (domyślna); `JOBS=N` zmienia liczbę zadań make.
-
-Na telefonie jest **0.D „Danny”**: menu startuje w kilka sekund, nowy świat wczytuje się ok.
-2,5 min, gra zajmuje ok. 120 MB RAM, ruch jest płynny, zapis działa.
+`sudo scripts/build-cdda.sh [VERSION]` builds the curses version of the game in an Alpine
+armhf chroot under qemu (several hours) and makes `out/cataclysm-VERSION-armhf.tar.gz`.
+0.8, 0.A and 0.D (the default) build. On the phone 0.D starts its menu in seconds, creates
+a world in about 2.5 minutes and uses about 120 MB of RAM.
 
 ```sh
-apk add ncurses-libs ncurses-terminfo-base libintl libstdc++
+ssh root@172.16.42.1 apk add ncurses-libs ncurses-terminfo-base libintl libstdc++
 ssh root@172.16.42.1 'tar -xzf - -C /opt' < out/cataclysm-0.D-armhf.tar.gz
-# /usr/local/bin/cataclysm (w overlayu): LANG=C.UTF-8, cd /opt/cataclysm, ./cataclysm
 ```
 
-Gra potrzebuje co najmniej 80x24, czyli czcionki 6x12 (`ter-112n` / `ter-212n`).
-Zapisy trafiają do `/opt/cataclysm/save`. Stare zapisy z 0.8 leżą w `/root/cataclysm-0.8-saves`.
+Run it with `cataclysm`. It needs at least 80×24, so pick the 6×12 font on the phone's console.
+
+## Notable problems solved
+
+1. musl's TLS register access needs `HAS_TLS_REG` on this ARMv6K core, otherwise every
+   Alpine program segfaults.
+2. `DEVTMPFS` hangs this kernel at boot; printk to fbcon deadlocks msm_fb (`console=null`).
+3. No `getrandom()`: haveged starts before OpenRC, otherwise sshd and boot wait for minutes.
+4. HTC's kernel sets `dirty_writeback_interval` to 0 until Android's early-suspend, so
+   without `vm.dirty_writeback_centisecs = 500` an unclean reboot loses every file written
+   since boot.
+5. OpenRC services that fail on 2.6.35 (`checkpath` through the `/var/run` symlink, ambient
+   capabilities) have replacements: `wpa_supplicant-chacha`, `ntpd-legacy`.
+6. The keypad driver has no autorepeat; `chacha-idle` repeats held keys by writing events
+   back into the input device.
+
+The full engineering log, including dead ends, is in [NOTES.md](NOTES.md); the phone's
+reconnaissance in [recon/SUMMARY.md](recon/SUMMARY.md).
+
+## Repository
+
+```
+scripts/chacha-install.sh   guided installation (start here)
+scripts/                    fetch, build-kernel, build-bootimg, build-rootfs, write-sd, build-cdda
+kernel/                     patch and .config for Marvellousteam/android_kernel_htc_msm7227@kk
+initramfs/                  /init and the initramfs file list
+config/rootfs-overlay/      files copied onto the rootfs (OpenRC services, chacha-config, ...)
+config/gen-keymap.py        console keymap generator
+config/host-usb-nat.sh      internet for the phone through the computer
+tools-src/                  chacha-idle, chacha-touchkeys, wlpriv, reboot-bootloader (C)
+recon/                      what the phone reported under Android (no identifying data)
+NOTES.md                    engineering log
+```
+
+`work/`, `out/`, `backup/`, the WiFi firmware and the raw dumps from the phone (which contain
+its IMEI, serial number and MAC address) are in `.gitignore`.
+
+## License
+
+MIT (see [LICENSE](LICENSE)), except `kernel/`, which is a patch and configuration for the
+Linux kernel and is GPL-2.0 like the kernel (see [kernel/LICENSE](kernel/LICENSE)).

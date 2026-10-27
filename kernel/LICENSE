@@ -1,0 +1,7 @@
+chacha-alpine.patch and chacha-alpine.config modify and configure the Linux
+kernel (https://github.com/Marvellousteam/android_kernel_htc_msm7227, branch kk),
+which is licensed under the GNU General Public License, version 2 only. These
+files are distributed under the same license:
+
+  SPDX-License-Identifier: GPL-2.0-only
+  https://www.gnu.org/licenses/old-licenses/gpl-2.0.txt
