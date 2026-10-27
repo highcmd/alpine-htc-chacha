@@ -532,6 +532,31 @@ repeat_menu() {
 	done
 }
 
+# ---------------------------------------------------------------- vibration
+
+VIBRATOR=/sys/class/timed_output/vibrator/enable
+
+vibrate() { echo "$1" > $VIBRATOR; }	# vibrate MS
+
+vibrate_menu() {
+	while :; do
+		header "vibration test"
+		say "a) short (100 ms)"
+		say "b) medium (500 ms)"
+		say "c) long (1.5 s)"
+		say "d) pattern (3 pulses)"
+		say ""
+		ask "Choose [Enter=back]: "
+		case $REPLY in
+		a) vibrate 100 ;;
+		b) vibrate 500 ;;
+		c) vibrate 1500 ;;
+		d) for _ in 1 2 3; do vibrate 150; sleep 0.4; done ;;
+		"") return ;;
+		esac
+	done
+}
+
 # ---------------------------------------------------------------- battery
 
 # The kernel's capacity comes from the factory 1250 mAh curve, so with another
@@ -590,6 +615,7 @@ while :; do
 	say "p) backlight and idle"
 	say "r) key repeat"
 	say "b) battery"
+	say "v) vibration test"
 	say ""
 	ask "Choose [Enter=quit]: "
 	case $REPLY in
@@ -600,6 +626,7 @@ while :; do
 	p) backlight_menu ;;
 	r) repeat_menu ;;
 	b) battery_screen ;;
+	v) vibrate_menu ;;
 	"") clear; exit 0 ;;
 	esac
 done

@@ -263,6 +263,8 @@ współrzędne dotyku (próg paska klawiszy: `-y 700`).
   więc robi je `chacha-idle`: po opóźnieniu (250/400/600 ms albo wyłączone) wysyła powtórzenia
   z wybraną szybkością (5/10/15/20 na sekundę). Shift, FN, SYM, Alt i power się nie powtarzają.
   Zapis w `/etc/conf.d/chacha-idle` (`KEY_REPEAT_DELAY`, `KEY_REPEAT_PERIOD`), domyślnie 400 ms, 10/s.
+- `v`: test wibracji (100 ms, 500 ms, 1,5 s, trzy impulsy). Silnik to
+  `/sys/class/timed_output/vibrator/enable`: `echo 500 >` wibruje 500 ms, `echo 0 >` przerywa.
 - `b`: bateria. Napięcie (`batt_vol`), status, ładowarka, prąd, temperatura; odświeża się
   co 5 s. Napięcie widać też w menu głównym. Procent z kernela liczony jest z krzywej
   fabrycznej baterii 1250 mAh, więc przy innym ogniwie miarodajne jest napięcie

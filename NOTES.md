@@ -297,3 +297,12 @@ chacha-idle saves/restores whatever value is current, so it keeps the choice.
 Deployed 2026-10-27 with the FN+v keymap (loadkeys -C /dev/tty1, dumpkeys shows keycode 47
 = +v +V asciicircum currency); files replaced via mv because chacha-config was running on
 tty1. Menus render; lowest usable level on the panel still to be judged by the user.
+
+## Audio / FM (dropped) and vibrator
+Audio: no ALSA; HTC qdsp5_comp driver. /dev/msm_pcm_out plays (AUDIO_SET_CONFIG, write two
+4800-byte buffers BEFORE AUDIO_START, else -EIO); /dev/msm_snd only has SND_SET_DEVICE /
+SND_SET_VOLUME (no endpoint list; ids from the modem table). A 440 Hz test tone ran through
+DSP/audmgr without errors; whether/where it was audible never confirmed. Headset detect:
+/sys/class/switch/h2w. FM: BCM4329 over HCI on /dev/ttyHS0, no kernel FM driver. User dropped
+audio and FM ("nie sa potrzebne"); test tools removed from the phone.
+Vibrator: /sys/class/timed_output/vibrator/enable (ms) works; chacha-config "v) vibration test".
