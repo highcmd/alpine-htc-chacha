@@ -12,7 +12,7 @@ import sys
 letters = {
     'q': ('parenleft', 'bracketleft'), 'w': ('one', 'braceleft'),
     'e': ('two', 'less'), 'r': ('three', 'greater'),
-    't': ('exclam', 'bar'), 'y': ('U+00A3', 'U+00A3'),
+    't': ('exclam', 'bar'), 'y': ('less', 'greater'),  # FN+y: <, Shift+FN+y: > (instead of £)
     'u': ('dollar', 'asciitilde'), 'i': ('percent', 'percent'),
     'o': ('ampersand', 'ampersand'), 'p': ('at', 'at'),
     'a': ('parenright', 'bracketright'), 's': ('four', 'braceright'),
