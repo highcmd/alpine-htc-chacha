@@ -2,3 +2,5 @@
 KEYBOARD="on"
 # Touch-key backlight under the screen: 0 (off) .. 255
 BUTTONS="0"
+# Screen backlight: 1 .. 255; empty = leave the kernel's value
+SCREEN=""

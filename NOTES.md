@@ -288,3 +288,11 @@ conf.d KEY_REPEAT_DELAY/KEY_REPEAT_PERIOD (400/100), chacha-config "r) key repea
 Measured via an evdev reader: first repeat 402 ms after press, then 99-101 ms apart.
 MISTAKE: tested by injecting keys while the user was playing CDDA on tty1 (~20 moves west,
 opened "Use item"). Check /dev/vcs1 / ps for tty1 before injecting anything.
+
+## Screen brightness
+lcd-backlight (0..255) via chacha-config p -> e (10/25/50/75/100% = 26/64/128/192/255),
+preview + confirm y within 15 s else revert. Saved as SCREEN in conf.d/chacha-backlight
+(empty = leave kernel value); chacha-backlight start writes it, stop leaves the screen lit.
+chacha-idle saves/restores whatever value is current, so it keeps the choice.
+Written while the phone was disconnected: not yet deployed or tested (also pending:
+FN+v keymap). Lowest usable level on the panel unknown.

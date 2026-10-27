@@ -250,7 +250,8 @@ współrzędne dotyku (próg paska klawiszy: `-y 700`).
   od 6x12 do 16x32) albo kilka klasycznych czcionek; przy każdej widać, ile mieści się
   kolumn i wierszy. Wybrana czcionka od razu pojawia się na tty1. Jeśli nie potwierdzisz
   jej `y` w ciągu 20 s, wraca poprzednia. Wybór trafia do `/etc/conf.d/consolefont`.
-- `p`: podświetlenie klawiatury (tylko wł./wył.) i przycisków dotykowych (wyłączone, słabe,
+- `p`: jasność ekranu (`e`: 10/25/50/75/100%; nową jasność trzeba potwierdzić `y` w ciągu 15 s,
+  inaczej wraca poprzednia, na wypadek zbyt ciemnego ekranu), podświetlenie klawiatury (tylko wł./wył.) i przycisków dotykowych (wyłączone, słabe,
   średnie, pełne). Ustawienie jest zapisywane w `/etc/conf.d/chacha-backlight`, a usługa
   `chacha-backlight` przywraca je przy starcie.
   `t` ustawia wygaszanie: `chacha-idle` po zadanym czasie bez klawisza i dotyku gasi

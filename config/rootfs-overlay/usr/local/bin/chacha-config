@@ -397,6 +397,35 @@ bl_buttons_label() {
 	esac
 }
 
+screen_level() { echo $(( ($(cat $LEDS/lcd-backlight/brightness) * 100 + 127) / 255 ))%; }
+
+# Preview the level, keep it only if confirmed (a too dark screen reverts)
+screen_menu() {
+	header "screen brightness"
+	say "Now: $(screen_level)"
+	say ""
+	say "a) 10%   b) 25%   c) 50%"
+	say "d) 75%   e) 100%"
+	say ""
+	ask "Choose [Enter=back]: "
+	case $REPLY in
+	a) v=26 ;; b) v=64 ;; c) v=128 ;; d) v=192 ;; e) v=255 ;;
+	*) return ;;
+	esac
+	old=$(cat $LEDS/lcd-backlight/brightness)
+	echo $v > $LEDS/lcd-backlight/brightness
+	printf 'Keep it? [y/N, 15 s] '
+	if read -r -t 15 REPLY && case $REPLY in y|Y) true ;; *) false ;; esac; then
+		grep -q '^SCREEN=' "$BLCONF" || echo 'SCREEN=""' >> "$BLCONF"
+		bl_set SCREEN $v
+	else
+		echo $old > $LEDS/lcd-backlight/brightness
+		echo
+		say "Restored."
+		pause
+	fi
+}
+
 # The keyboard LED is on/off only; the touch keys are PWM (0..255)
 backlight_menu() {
 	while :; do
@@ -404,10 +433,12 @@ backlight_menu() {
 		btn=$(bl_get BUTTONS)
 		idle=$(bl_get IDLE_TIMEOUT "$IDLECONF")
 		header "backlight"
+		say "Screen:     $(screen_level)"
 		say "Keyboard:   ${kbd:-on}"
 		say "Touch keys: $(bl_buttons_label "${btn:-0}")"
 		say "Idle off:   $(idle_label "${idle:-300}")"
 		say ""
+		say "e) screen brightness"
 		say "k) keyboard on/off"
 		say "a) touch keys: off"
 		say "b) touch keys: low"
@@ -428,6 +459,7 @@ backlight_menu() {
 			case $REPLY in a) v=0 ;; b) v=32 ;; c) v=96 ;; d) v=255 ;; esac
 			echo $v > $LEDS/button-backlight/brightness
 			bl_set BUTTONS $v ;;
+		e) screen_menu ;;
 		t) idle_menu ;;
 		"") return ;;
 		esac

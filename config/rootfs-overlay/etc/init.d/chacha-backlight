@@ -1,8 +1,8 @@
 #!/sbin/openrc-run
-# Keyboard and touch-key backlights (microp LEDs). The panel's lcd-backlight-gate
+# Screen, keyboard and touch-key backlights (microp LEDs). The panel's lcd-backlight-gate
 # trigger only fires on Android early-suspend, so plain brightness values are used.
 
-description="Keyboard and touch-key backlights"
+description="Screen, keyboard and touch-key backlights"
 
 LEDS=/sys/class/leds
 
@@ -11,12 +11,14 @@ start() {
 	# keyboard-backlight is a GPO: any non-zero value is fully on
 	[ "${KEYBOARD:-on}" = on ] && kbd=255 || kbd=0
 	echo $kbd > $LEDS/keyboard-backlight/brightness &&
-		echo "${BUTTONS:-0}" > $LEDS/button-backlight/brightness
+		echo "${BUTTONS:-0}" > $LEDS/button-backlight/brightness &&
+		{ [ -z "$SCREEN" ] || echo "$SCREEN" > $LEDS/lcd-backlight/brightness; }
 	eend $?
 }
 
+# the screen stays lit: switching it off on stop would leave the console dark
 stop() {
-	ebegin "Switching backlights off"
+	ebegin "Switching keyboard and touch-key backlights off"
 	echo 0 > $LEDS/keyboard-backlight/brightness
 	echo 0 > $LEDS/button-backlight/brightness
 	eend 0
