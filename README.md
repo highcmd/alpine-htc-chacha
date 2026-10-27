@@ -22,7 +22,7 @@ kernel build and initramfs.
 | WiFi | BCM4329, 2.4 GHz, WPA/WPA2-PSK and open networks, scan/connect menu |
 | USB | RNDIS network: phone `172.16.42.1`, computer `172.16.42.2`, SSH by key, NAT for internet |
 | Power | battery voltage, screen/keyboard backlight off when idle, power key: screen off / hold 3 s to power off |
-| Other | vibration motor; Cataclysm: DDA 0.D builds and runs |
+| Other | vibration motor; bonus: Cataclysm: DDA 0.D builds and runs (see the end) |
 | Not working | touchscreen input (except the four keys), audio, telephony, GPS, camera, 5 GHz, RTC (clock comes from NTP) |
 
 ## Before you start
@@ -192,20 +192,6 @@ channels 1–13): set your own country code there.
 - Hung phone: Power + Vol Up + Vol Down resets it while the kernel still runs; a hung
   kernel needs the battery taken out (Power alone does not reset).
 
-## Cataclysm: Dark Days Ahead
-
-`sudo scripts/build-cdda.sh [VERSION]` builds the curses version of the game in an Alpine
-armhf chroot under qemu (several hours) and makes `out/cataclysm-VERSION-armhf.tar.gz`.
-0.8, 0.A and 0.D (the default) build. On the phone 0.D starts its menu in seconds, creates
-a world in about 2.5 minutes and uses about 120 MB of RAM.
-
-```sh
-ssh root@172.16.42.1 apk add ncurses-libs ncurses-terminfo-base libintl libstdc++
-ssh root@172.16.42.1 'tar -xzf - -C /opt' < out/cataclysm-0.D-armhf.tar.gz
-```
-
-Run it with `cataclysm`. It needs at least 80×24, so pick the 6×12 font on the phone's console.
-
 ## Notable problems solved
 
 1. musl's TLS register access needs `HAS_TLS_REG` on this ARMv6K core, otherwise every
@@ -245,3 +231,17 @@ its IMEI, serial number and MAC address) are in `.gitignore`.
 
 MIT (see [LICENSE](LICENSE)), except `kernel/`, which is a patch and configuration for the
 Linux kernel and is GPL-2.0 like the kernel (see [kernel/LICENSE](kernel/LICENSE)).
+
+## Bonus: Cataclysm: Dark Days Ahead
+
+`sudo scripts/build-cdda.sh [VERSION]` builds the curses version of the game in an Alpine
+armhf chroot under qemu (several hours) and makes `out/cataclysm-VERSION-armhf.tar.gz`.
+0.8, 0.A and 0.D (the default) build. On the phone 0.D starts its menu in seconds, creates
+a world in about 2.5 minutes and uses about 120 MB of RAM.
+
+```sh
+ssh root@172.16.42.1 apk add ncurses-libs ncurses-terminfo-base libintl libstdc++
+ssh root@172.16.42.1 'tar -xzf - -C /opt' < out/cataclysm-0.D-armhf.tar.gz
+```
+
+Run it with `cataclysm`. It needs at least 80×24, so pick the 6×12 font on the phone's console.
