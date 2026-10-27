@@ -294,5 +294,6 @@ lcd-backlight (0..255) via chacha-config p -> e (10/25/50/75/100% = 26/64/128/19
 preview + confirm y within 15 s else revert. Saved as SCREEN in conf.d/chacha-backlight
 (empty = leave kernel value); chacha-backlight start writes it, stop leaves the screen lit.
 chacha-idle saves/restores whatever value is current, so it keeps the choice.
-Written while the phone was disconnected: not yet deployed or tested (also pending:
-FN+v keymap). Lowest usable level on the panel unknown.
+Deployed 2026-10-27 with the FN+v keymap (loadkeys -C /dev/tty1, dumpkeys shows keycode 47
+= +v +V asciicircum currency); files replaced via mv because chacha-config was running on
+tty1. Menus render; lowest usable level on the panel still to be judged by the user.
