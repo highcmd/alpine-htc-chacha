@@ -306,3 +306,12 @@ DSP/audmgr without errors; whether/where it was audible never confirmed. Headset
 /sys/class/switch/h2w. FM: BCM4329 over HCI on /dev/ttyHS0, no kernel FM driver. User dropped
 audio and FM ("they are not needed"); test tools removed from the phone.
 Vibrator: /sys/class/timed_output/vibrator/enable (ms) works; chacha-config "v) vibration test".
+
+## CPU frequency (2026-10-28)
+
+msm cpufreq works out of the box: 19.2/122.9/128/245.8/480/800 MHz (msm7227_turbo_tbl in
+acpuclock-arm11.c, PLL2 at 800 MHz), scaling_min 245760, default governor SmartassH3 (about
+20 governors built in). time_in_state: ~98 % at 245 MHz. New service chacha-cpu (conf.d:
+GOVERNOR, MAX_FREQ; empty = leave) and chacha-config "c) CPU speed". Overclocking above
+800 MHz would need a kernel table change (the non-turbo msm7227_tbl reaches 864 MHz via PLL0);
+not done. Load average ~5 is D-state kernel threads (rpc, audio), not CPU use.

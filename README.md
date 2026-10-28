@@ -22,7 +22,7 @@ kernel build and initramfs.
 | WiFi | BCM4329, 2.4 GHz, WPA/WPA2-PSK and open networks, scan/connect menu |
 | USB | RNDIS network: phone `172.16.42.1`, computer `172.16.42.2`, SSH by key, NAT for internet |
 | Power | battery voltage, screen/keyboard backlight off when idle, power key: screen off / hold 3 s to power off |
-| Other | vibration motor; bonus: Cataclysm: DDA 0.D builds and runs (see the end) |
+| Other | CPU speed (245-800 MHz, governor), vibration motor; bonus: Cataclysm: DDA 0.D builds and runs (see the end) |
 | Not working | touchscreen input (except the four keys), audio, telephony, GPS, camera, 5 GHz, RTC (clock comes from NTP) |
 
 ## Before you start
@@ -168,6 +168,9 @@ chosen with letters (digits need FN); Enter goes back.
 - `b` battery: voltage, status, charger, current, temperature. The kernel's percentage
   follows the original 1250 mAh cell's curve, so the voltage is the better guide with
   another battery (about 4.2 V full, 3.4 V empty).
+- `c` CPU speed: power save, auto (by load, the default) or maximum, and a 480 or
+  800 MHz limit. Kept across reboots by the `chacha-cpu` service
+  (`/etc/conf.d/chacha-cpu`).
 - `v` vibration test. The motor is `/sys/class/timed_output/vibrator/enable`
   (`echo 500 >` vibrates for 500 ms).
 

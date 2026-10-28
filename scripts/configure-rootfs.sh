@@ -39,6 +39,6 @@ mkdir -p var/lib/misc
 add() { mkdir -p etc/runlevels/$2; ln -sf /etc/init.d/$1 etc/runlevels/$2/$1; }
 for s in devfs dmesg mdev; do add $s sysinit; done
 for s in bootmisc hostname modules sysctl syslog seedrng swclock networking consolefont loadkeys wpa_supplicant-chacha; do add $s boot; done
-for s in sshd local wifi-country chacha-touchkeys chacha-backlight chacha-idle ntpd-legacy crond; do add $s default; done
+for s in sshd local wifi-country chacha-touchkeys chacha-backlight chacha-cpu chacha-idle ntpd-legacy crond; do add $s default; done
 for s in killprocs mount-ro savecache; do add $s shutdown; done
 echo "rootfs configured"

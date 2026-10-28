@@ -1,5 +1,5 @@
 #!/bin/sh
-# chacha-config: WiFi, console font and backlight setup for the HTC ChaCha.
+# chacha-config: WiFi, console font, backlight and CPU setup for the HTC ChaCha.
 # Menus use letters (digits need FN on the ChaCha keyboard); Enter = back.
 # Lines are kept short so the menus still fit with a 16x32 font (30x10).
 
@@ -597,6 +597,57 @@ battery_screen() {
 	done
 }
 
+# ---------------------------------------------------------------- cpu
+
+CPUFREQ=/sys/devices/system/cpu/cpu0/cpufreq
+CPUCONF=/etc/conf.d/chacha-cpu
+
+mhz() { echo $(( $1 / 1000 )) MHz; }	# mhz KHZ
+
+gov_label() {
+	case $1 in
+	powersave) echo "power save" ;;
+	performance) echo "maximum" ;;
+	*) echo "auto ($1)" ;;
+	esac
+}
+
+cpu_summary() {
+	echo "$(mhz $(cat $CPUFREQ/scaling_cur_freq)), $(gov_label $(cat $CPUFREQ/scaling_governor))"
+}
+
+cpu_menu() {
+	while :; do
+		header "CPU speed"
+		say "now:   $(mhz $(cat $CPUFREQ/scaling_cur_freq))"
+		say "mode:  $(gov_label $(cat $CPUFREQ/scaling_governor))"
+		say "range: $(mhz $(cat $CPUFREQ/scaling_min_freq)) - $(mhz $(cat $CPUFREQ/scaling_max_freq))"
+		say ""
+		say "Mode:"
+		say "a) power save (lowest)"
+		say "b) auto (by load)"
+		say "c) maximum (always)"
+		say "Limit:"
+		say "d) 480 MHz  e) 800 MHz"
+		say ""
+		ask "Choose [Enter=back]: "
+		case $REPLY in
+		a) var=GOVERNOR v=powersave ;;
+		b) var=GOVERNOR v=SmartassH3 ;;
+		c) var=GOVERNOR v=performance ;;
+		d) var=MAX_FREQ v=480000 ;;
+		e) var=MAX_FREQ v=800000 ;;
+		"") return ;;
+		*) continue ;;
+		esac
+		bl_set $var $v "$CPUCONF"
+		case $var in
+		GOVERNOR) echo $v > $CPUFREQ/scaling_governor ;;
+		MAX_FREQ) echo $v > $CPUFREQ/scaling_max_freq ;;
+		esac
+	done
+}
+
 # ---------------------------------------------------------------- main
 
 trap 'stty echo 2>/dev/null; rm -f /tmp/chacha-scan /tmp/chacha-nets /tmp/chacha-fonts /tmp/chacha-fonts.s' EXIT
@@ -607,6 +658,7 @@ while :; do
 	say "WiFi: $(wifi_summary)"
 	say "Font: $(font_current | sed "s/\.psf.*//")"
 	say "Batt: $(batt_summary)"
+	say "CPU:  $(cpu_summary)"
 	say ""
 	say "w) WiFi: scan and connect"
 	say "z) WiFi: saved networks"
@@ -615,6 +667,7 @@ while :; do
 	say "p) backlight and idle"
 	say "r) key repeat"
 	say "b) battery"
+	say "c) CPU speed"
 	say "v) vibration test"
 	say ""
 	ask "Choose [Enter=quit]: "
@@ -626,6 +679,7 @@ while :; do
 	p) backlight_menu ;;
 	r) repeat_menu ;;
 	b) battery_screen ;;
+	c) cpu_menu ;;
 	v) vibrate_menu ;;
 	"") clear; exit 0 ;;
 	esac

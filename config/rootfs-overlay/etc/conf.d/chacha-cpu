@@ -1,0 +1,5 @@
+# CPU frequency governor: powersave | SmartassH3 (auto) | performance;
+# empty = leave the kernel's default (SmartassH3)
+GOVERNOR=""
+# Highest CPU frequency in kHz: 480000 | 800000; empty = leave (800000)
+MAX_FREQ=""
